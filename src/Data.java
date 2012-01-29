@@ -13,6 +13,13 @@ public class Data{
 		return r1 * Math.sqrt(-2 * Math.log(Math.abs(r1)) / tmp);
 	}
 	
+	public static double sampleNormalUnivariate(double mean, double var ){ // variance = var 
+		double a = sampleStandardNormalUnivariate();
+		return Math.sqrt(var) * a + mean;
+	}
+	
+	
+	
 	void newData(){
 	}
 

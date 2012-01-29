@@ -15,7 +15,7 @@ public class main{
 		double sum = 0;
 		for (int i = 0; i < 20000000; i ++)
 		{
-			sum += c.sampleStandardNormalUnivariate();
+			sum += c.sampleNormalUnivariate(2,1);
 		}
 		System.out.println("sum = "+ sum +" ave = " + sum * 1.0 / 20000000);
 		return;
