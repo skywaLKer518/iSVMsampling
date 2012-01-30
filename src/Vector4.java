@@ -52,7 +52,17 @@ class Vector4 extends Data{
 			return 0;
 	}
 	
+	public double disFunc(double[] eta,int i){
+		if (lable[i] == 0){// then f(y,x) = (x[1],x[2],x[3],x[4],0,0,0,0)
+			return (eta[0] * v1[i] + eta[1] * v2[i] + eta[2] * v3[i] + eta[3] * v4[i]);
+		}
+		else{ // then f(y,x) = (0,0,0,0,x[1],x[2],x[3],x[4])
+			return (eta[4] * v1[i] + eta[5] * v2[i] + eta[6] * v3[i] + eta[7] * v4[i]);
+		}
+	}
+	
 	public void printV(int i){
 		System.out.println("the "+i+"th : "+v1[i]+" "+v2[i]+" "+v3[i]+" "+v4[i]+" Lable: "+lable[i]);
 	}
+	
 }
