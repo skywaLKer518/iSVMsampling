@@ -1,6 +1,6 @@
 public class Data{
 	private int setting = 1;
-	private double a[],b[],c[],d[];
+	
 	
 	public static double sampleStandardNormalUnivariate(){ // return a sample from standard normal distribution
 		double r1 = 1,r2 = 1;
@@ -13,7 +13,7 @@ public class Data{
 		return r1 * Math.sqrt(-2 * Math.log(Math.abs(r1)) / tmp);
 	}
 	
-	public static double sampleNormalUnivariate(double mean, double var ){ // variance = var 
+	public static double sampleNormalUnivariate(double mean, double var ){ // variance = var = sigma * sigma 
 		double a = sampleStandardNormalUnivariate();
 		return Math.sqrt(var) * a + mean;
 	}
@@ -21,6 +21,7 @@ public class Data{
 	
 	
 	void newData(){
+
 	}
 
 }
