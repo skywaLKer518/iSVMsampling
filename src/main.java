@@ -4,7 +4,7 @@ public class main{
 	public static void main(String args[]) throws IOException{
 		
 		/*
-		 * repeatedly run the following (), in different settings (1,2,3)
+		 * run the following in dataSets(), in different settings (1,2,3)
 		 * 
 		 * 1,generate training data
 		 * 2,train
@@ -19,7 +19,6 @@ public class main{
 			v4.newData();
 			lk.go(v4,Environment.dataSetSize,Environment.trainSize);
 			lk.evaluation();
-			int a = 0;
 		}
 		lk.report();
 		System.out.println(lk.changeTimes);

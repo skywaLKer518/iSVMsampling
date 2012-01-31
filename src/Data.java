@@ -1,7 +1,4 @@
 public class Data{
-	private int setting = 1;
-	
-	
 	public static double sampleStandardNormalUnivariate(){ // return a sample from standard normal distribution
 		double r1 = 1,r2 = 1;
 		double tmp = r1*r1 + r2*r2;
@@ -17,11 +14,10 @@ public class Data{
 		double a = sampleStandardNormalUnivariate();
 		return Math.sqrt(var) * a + mean;
 	}
-	
-	
-	
-	void newData(){
 
+	void newData(){
+	}
+	void clearData(){
 	}
 
 }

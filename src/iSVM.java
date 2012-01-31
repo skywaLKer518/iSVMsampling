@@ -4,20 +4,23 @@ import java.util.List;
 
 /*
  * model: infinite SVM
- * first do the predictive model part.(generative part later)
+ * first do the discriminative model part.(generative part later)
  */
 public class iSVM {
+	private static final double alphaDP = 1.0;
 	private final int etaLength1 = 8; // for data setting 1
 	private final int R = 5; // repeating times in Algorithm 5
-	private final int Times = 100; // 
+	private final int Times = 5000; // TODO
 	private int z[];
 	private double eta[][];
 	private int prediction[];
 	private int score = 0;
 	private double accuracy = 0;
 	private double average = 0;
-	
+	//test
+	private int data0,data1,predic0,predic1;
 	public int changeTimes = 0;
+	private int change = 0;
 	
 	
 	//TODO
@@ -39,8 +42,8 @@ public class iSVM {
 		for (int i = 0; i < Environment.maxComponent; i++){
 			eta[i] = new double[etaLength1];
 		}
-		number = new int[Environment.MaxCateNumber+1];
-		for (int i = 0; i <= Environment.MaxCateNumber; i++){
+		number = new int[Environment.maxComponent+1];
+		for (int i = 0; i <= Environment.maxComponent; i++){
 			number[i] = 0;
 		}
 		prediction = new int[Environment.dataSetSize];
@@ -60,14 +63,13 @@ public class iSVM {
 			int test2 = number[1];
 			if (test1 != 0 && test2 == 0){
 				changeTimes ++;
+				change ++;
 			}
-//			if (number[1] == 0)
-//				System.out.println("number[1] goes to zero");
 		}
 	}
 
 	private void init() {
-		for (int i = 0; i <= Environment.MaxCateNumber; i++){
+		for (int i = 0; i <= Environment.maxComponent; i++){
 			number[i] = 0;
 		}
 		cateNumber = 0;
@@ -78,6 +80,8 @@ public class iSVM {
 		for (int i = 0; i < Environment.trainSize; i++){
 			z[i] = 0;
 		}
+		
+		change++;//test
 	}
 
 	/*
@@ -96,7 +100,15 @@ public class iSVM {
 			}
 			if (disF0 > disF1)	prediction[i] = 0;
 			else prediction[i] = 1;
+			
+			//test TODO
+			if (prediction[i] == 0) predic0++;
+			else predic1++;
+			if (v4.getLable(i) == 0) data0++;
+			else data1++;
+			
 			score += v4.lableTest(prediction[i], i);
+			
 		}
 	}
 	
@@ -177,7 +189,7 @@ public class iSVM {
 			Iterator<Integer> it = cateAlive.iterator();
 			while (it.hasNext()){
 				n = (Integer)it.next();             // the nth category
-				p = number[n] * 1.0 / ((Observed * 1.0) + DP.alpha - 1);
+				p = number[n] * 1.0 / ((Observed * 1.0) + alphaDP - 1);
 				F += p;
 				if (r < F)
 					return n;
@@ -293,9 +305,22 @@ public class iSVM {
 		}
 		
 		System.out.println("    Final Score is "+score+" out of "+Environment.testSize+" ("+accuracy+")");
+//		System.out.println("change time is "+change);
 		System.out.println();System.out.println();
 	}
 
+	public void report() {
+		average /= Environment.dataSetNum;
+		System.out.println();System.out.println();
+		System.out.print("Accuracy : " + average);
+		System.out.println();System.out.println();
+		System.out.println("DataLable:   "+data0+" "+data1);
+		System.out.println("predictLable:"+predic0+" "+predic1);
+		System.out.print(data0* 1.0 / data1);
+		System.out.println("/"+predic0* 1.0 / predic1);
+		System.out.println();System.out.println();
+	}
+	
 	public double sampleStandardNormalUnivariate(){ // return a sample from standard normal distribution
 		double r1 = 1,r2 = 1;
 		double tmp = r1*r1 + r2*r2;
@@ -312,12 +337,5 @@ public class iSVM {
 		return Math.sqrt(var) * a + mean;
 	}
 
-	public void report() {
-		average /= Environment.dataSetNum;
-		System.out.println();System.out.println();
-		System.out.print("Accuracy : " + average);
-		System.out.println();System.out.println();
-		
-		
-	}
+
 }
