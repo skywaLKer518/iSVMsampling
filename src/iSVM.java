@@ -8,7 +8,8 @@ import java.util.List;
  */
 public class iSVM {
 	private final int etaLength1 = 8; // for data setting 1
-	private final int Times = 5; // repeating times in Algorithm 5
+	private final int R = 5; // repeating times in Algorithm 5
+	private final int Times = 100; // 
 	private int z[];
 	private double eta[][];
 	
@@ -31,6 +32,11 @@ public class iSVM {
 		for (int i = 0; i < Environment.maxComponent; i++){
 			eta[i] = new double[etaLength1];
 		}
+		number = new int[Environment.MaxCateNumber+1];
+		for (int i = 0; i <= Environment.MaxCateNumber; i++){
+			number[i] = 0;
+		}
+		cateNumber = 0;
 	}
 
 	public void go(Vector4 v4, int setSize, int trainSize) {
@@ -41,7 +47,7 @@ public class iSVM {
 	private void train(Vector4 v4, int setSize, int trainSize) {
 		for (int i = 0; i < Times; i ++){
 			step1(v4,setSize,trainSize);
-			step2(v4,setSize,trainSize);
+//			step2(v4,setSize,trainSize);
 		}
 	}
 
@@ -61,10 +67,10 @@ public class iSVM {
 	private void step1(Vector4 v4, int setSize, int trainSize) {
 		int c;
 		double accept,r,m1,m2;
-		for (int i = 0; i < Environment.trainSize; i++){
-			for (int j = 0; j < Times; j++){
+		for (int k = 0; k < Environment.trainSize; k++){
+			for (int j = 0; j < R; j++){
 				c = drawC();//  category;z
-				if (z[i] == c)
+				if (z[k] == c)
 					continue;
 				if (number[c] == 0){ // if c* is not in {c1,c2,...,cn}, draw theta from G_0, for c*
 //					drawTheta(c);
@@ -72,15 +78,15 @@ public class iSVM {
 				}
 				// compute the acceptance probability; given f(x,y),eta,z
 				// that is,f(in vector4), eta[z[i]][], and eta[c]
-				m1 = v4.disFunc(eta[z[i]], i);
-				m2 = v4.disFunc(eta[c], i);
+				m1 = v4.disFunc(eta[z[k]], k);
+				m2 = v4.disFunc(eta[c], k);
 				if (m2 >= m1)
 					accept = 1;
 				else
 					accept = m2/m1;
 				r = Math.random();
 				if (r <= accept){
-					updateCate(i,c);
+					updateCate(k,c);
 //					printDataStateTheta();
 				}
 				
@@ -90,11 +96,25 @@ public class iSVM {
 		}
 		
 	}
-	
+	/*
+	 * draw Eta from G_0, that is , 8-dim gaussian 
+	 */
 	private void drawEta(int c) {
-		// TODO Auto-generated method stub
-		
+		double r[] = new double [8];
+		for (int i = 0 ; i < 8 ; i++){
+			r[i] = sampleStandardNormalUnivariate();
+		}
+		vectorAssign(eta[c],etaLength1,r);
+		return;
 	}
+	
+	private void vectorAssign(double[] a, int size, double[] b){
+		for (int i = 0; i < size; i++){
+			a[i] = b[i];
+		}
+		return;
+	}
+	
 
 	/*
 	 * draw a candidate c*, from the conditional prior by (5.4)
@@ -211,5 +231,21 @@ public class iSVM {
 				cateAlive.add(c);
 			}
 		}
+	}
+	
+	public double sampleStandardNormalUnivariate(){ // return a sample from standard normal distribution
+		double r1 = 1,r2 = 1;
+		double tmp = r1*r1 + r2*r2;
+		while (tmp > 1){
+			r1 = 2 * Math.random() - 1;
+			r2 = 2 * Math.random() - 1;
+			tmp = r1*r1 + r2*r2;
+		}
+		return r1 * Math.sqrt(-2 * Math.log(Math.abs(r1)) / tmp);
+	}
+	
+	public double sampleNormalUnivariate(double mean, double var ){ // variance = var = sigma * sigma 
+		double a = sampleStandardNormalUnivariate();
+		return Math.sqrt(var) * a + mean;
 	}
 }

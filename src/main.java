@@ -20,10 +20,13 @@ public class main{
 			v4.newData();
 			lk.go(v4,Environment.dataSetSize,Environment.trainSize);
 			lk.evaluation();
+			
 		}
-		for (int i = 5000; i < 5030; i ++){
-			v4.printV(i);
-		}
+		
+//		for (int i = 5000; i < 5030; i ++){
+//			v4.printV(i);
+//		}
+		
 		
 //		System.out.println(p);
 		
