@@ -16,7 +16,7 @@ public class main{
 		iSVM lk = new iSVM();
 		
 //		for (int i = 0; i < Environment.dataSetNum; i++){
-		for (int i = 0; i < 1; i++){
+		for (int i = 0; i < 10; i++){
 			v4.newData();
 			lk.go(v4,Environment.dataSetSize,Environment.trainSize);
 			lk.evaluation();

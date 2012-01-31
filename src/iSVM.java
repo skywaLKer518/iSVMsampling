@@ -12,11 +12,13 @@ public class iSVM {
 	private final int Times = 100; // 
 	private int z[];
 	private double eta[][];
+	private int prediction[];
+	private int score = 0;
 	
 	//TODO
 	
 	/*
-	 * here use similar algorithm as in MCMC on DP Model
+	 * here use similar algorithm as in MCMC on DP Model, not Stick Breaking Process.
 	 */
 	private int cateNumber = 0; // number of category
 	private int cateIndexMax = 0;
@@ -37,6 +39,8 @@ public class iSVM {
 			number[i] = 0;
 		}
 		cateNumber = 0;
+		prediction = new int[Environment.dataSetSize];
+		score = 0;
 	}
 
 	public void go(Vector4 v4, int setSize, int trainSize) {
@@ -47,17 +51,32 @@ public class iSVM {
 	private void train(Vector4 v4, int setSize, int trainSize) {
 		for (int i = 0; i < Times; i ++){
 			step1(v4,setSize,trainSize);
-//			step2(v4,setSize,trainSize);
+			step2(v4,setSize,trainSize);
 		}
 	}
 
+	/*
+	 * test ( from 100 to 10000 - 1 )
+	 */
 	private void test(Vector4 v4, int setSize, int trainSize) {
-		// TODO Auto-generated method stub
-		
+		double disF0,disF1;score = 0;
+		for (int i = 100; i < Environment.dataSetSize; i++){
+			disF0 = 0;
+			disF1 = 0;
+			for (int j = 0; j < cateIndexMax; j++){
+				if (number[j] <= 0)
+					continue;
+				disF0 += v4.disFunc(eta[j],i,0) * number[j] / (1.0 * cateNumber);
+				disF1 += v4.disFunc(eta[j],i,1) * number[j] / (1.0 * cateNumber);
+			}
+			if (disF0 > disF1)	prediction[i] = 0;
+			else prediction[i] = 1;
+			score += v4.lableTest(prediction[i], i);
+		}
 	}
 	
 	public void evaluation() {
-		// TODO Auto-generated method stub
+		System.out.println("Final Score is "+score+" out of "+Environment.testSize+" ("+score * 1.0 / Environment.testSize+")");
 		
 	}
 	
@@ -145,11 +164,11 @@ public class iSVM {
 	}
 
 	private void step2(Vector4 v4, int setSize, int trainSize) {
-		for (int i = 1; i <= cateIndexMax; i++){
-			if (number[i]<=0)
-				continue;		
-			eta[i] = updateEta(i);
-		}
+//		for (int i = 1; i <= cateIndexMax; i++){
+//			if (number[i]<=0)
+//				continue;		
+//			eta[i] = updateEta(i);
+//		}
 	}
 	
 	private double[] updateEta(int i) {

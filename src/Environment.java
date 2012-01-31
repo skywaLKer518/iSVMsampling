@@ -1,5 +1,6 @@
 public class Environment{
 	static final int trainSize = 100;
+	static final int testSize = 9900;
 	static final int dataSetSize = 10000;
 	static final int dataSetNum = 50;
 	static final int maxComponent = 100;
