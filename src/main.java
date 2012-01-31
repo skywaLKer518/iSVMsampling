@@ -22,6 +22,7 @@ public class main{
 			int a = 0;
 		}
 		lk.report();
+		System.out.println(lk.changeTimes);
 		
 //		for (int i = 5000; i < 5030; i ++){
 //			v4.printV(i);

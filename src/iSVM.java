@@ -17,6 +17,9 @@ public class iSVM {
 	private double accuracy = 0;
 	private double average = 0;
 	
+	public int changeTimes = 0;
+	
+	
 	//TODO
 	
 	/*
@@ -51,8 +54,13 @@ public class iSVM {
 	
 	private void train(Vector4 v4, int setSize, int trainSize) {
 		for (int i = 0; i < Times; i ++){
+			int test1 = number[1];
 			step1(v4,setSize,trainSize);
 			step2(v4,setSize,trainSize);
+			int test2 = number[1];
+			if (test1 != 0 && test2 == 0){
+				changeTimes ++;
+			}
 //			if (number[1] == 0)
 //				System.out.println("number[1] goes to zero");
 		}
@@ -95,7 +103,7 @@ public class iSVM {
 	public void evaluation() {
 		accuracy = score * 1.0 / Environment.testSize;
 		average += accuracy;
-//		printResult();
+		printResult();
 	}
 	
 	
@@ -206,11 +214,8 @@ public class iSVM {
 			z[i] = c;
 			if (number[c] <= 0){		// cateNumber,number[]
 				cateNumber++;
-				number[c]++;
 			}
-			else{
-				number[c]++;
-			}
+			number[c]++;
 			if (c > cateIndexMax)			// cateIndexMax
 				cateIndexMax = c;
 			if (number[minN]!=0){
@@ -258,6 +263,9 @@ public class iSVM {
 			z[i] = c;
 			number[c] ++;
 			number[previous] --;
+			while (number[minN]!=0){
+				minN++;
+			}
 			if (c > cateIndexMax){ 
 				cateIndexMax = c;
 			}
@@ -273,7 +281,7 @@ public class iSVM {
 	
 	private void printResult(){
 		System.out.println("Test Result\n---------------------------");
-		System.out.print("    cateIndexMax: "+cateIndexMax+"\n    cateNumber:   "+cateNumber+"\n");
+		System.out.print("    cateIndexMax: "+cateIndexMax+"\n    cateNumber:   "+cateNumber+"\n    MinN:         "+minN+"\n");
 		for (int j = 0; j <= cateIndexMax; j++){
 			if (number[j] <= 0)
 				continue;
