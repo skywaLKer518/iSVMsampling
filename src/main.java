@@ -15,13 +15,13 @@ public class main{
 		Vector4 v4 = new Vector4();
 		iSVM lk = new iSVM();
 		
-//		for (int i = 0; i < Environment.dataSetNum; i++){
-		for (int i = 0; i < 10; i++){
+		for (int i = 0; i < Environment.dataSetNum; i++){
 			v4.newData();
 			lk.go(v4,Environment.dataSetSize,Environment.trainSize);
 			lk.evaluation();
-			
+			int a = 0;
 		}
+		lk.report();
 		
 //		for (int i = 5000; i < 5030; i ++){
 //			v4.printV(i);

@@ -35,7 +35,7 @@ class Vector4 extends Data{
 			v4[i] *= Math.sqrt(Math.exp(sampleNormalUnivariate(0,2*2)));
 			lable[i] = Lable(i);
 		}
-		System.out.println("Date regeneration completed!");
+		System.out.println("Date generation completed!");
 	}
 
 	private int Lable(int i) {

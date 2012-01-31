@@ -14,6 +14,8 @@ public class iSVM {
 	private double eta[][];
 	private int prediction[];
 	private int score = 0;
+	private double accuracy = 0;
+	private double average = 0;
 	
 	//TODO
 	
@@ -38,12 +40,11 @@ public class iSVM {
 		for (int i = 0; i <= Environment.MaxCateNumber; i++){
 			number[i] = 0;
 		}
-		cateNumber = 0;
 		prediction = new int[Environment.dataSetSize];
-		score = 0;
 	}
 
 	public void go(Vector4 v4, int setSize, int trainSize) {
+		init();
 		train(v4,setSize,trainSize);
 		test(v4,setSize,trainSize);
 	}
@@ -52,6 +53,22 @@ public class iSVM {
 		for (int i = 0; i < Times; i ++){
 			step1(v4,setSize,trainSize);
 			step2(v4,setSize,trainSize);
+//			if (number[1] == 0)
+//				System.out.println("number[1] goes to zero");
+		}
+	}
+
+	private void init() {
+		for (int i = 0; i <= Environment.MaxCateNumber; i++){
+			number[i] = 0;
+		}
+		cateNumber = 0;
+		cateIndexMax = 0;
+		minN = 1;
+		Observed = 0;
+		cateAlive.clear();
+		for (int i = 0; i < Environment.trainSize; i++){
+			z[i] = 0;
 		}
 	}
 
@@ -63,7 +80,7 @@ public class iSVM {
 		for (int i = 100; i < Environment.dataSetSize; i++){
 			disF0 = 0;
 			disF1 = 0;
-			for (int j = 0; j < cateIndexMax; j++){
+			for (int j = 0; j <= cateIndexMax; j++){
 				if (number[j] <= 0)
 					continue;
 				disF0 += v4.disFunc(eta[j],i,0) * number[j] / (1.0 * cateNumber);
@@ -76,9 +93,11 @@ public class iSVM {
 	}
 	
 	public void evaluation() {
-		System.out.println("Final Score is "+score+" out of "+Environment.testSize+" ("+score * 1.0 / Environment.testSize+")");
-		
+		accuracy = score * 1.0 / Environment.testSize;
+		average += accuracy;
+//		printResult();
 	}
+	
 	
 	/*
 	 * here I use F(x,y,eta,z) (in paper iSVM, discriminative function) as the likelihood function.(problem //TODO)
@@ -252,6 +271,23 @@ public class iSVM {
 		}
 	}
 	
+	private void printResult(){
+		System.out.println("Test Result\n---------------------------");
+		System.out.print("    cateIndexMax: "+cateIndexMax+"\n    cateNumber:   "+cateNumber+"\n");
+		for (int j = 0; j <= cateIndexMax; j++){
+			if (number[j] <= 0)
+				continue;
+			System.out.print("    Category "+j+" ("+number[j]+"), eta = \n        ");
+			for (int i = 0; i < 8; i++){
+				System.out.print(eta[j][i]+"----");
+			}
+			System.out.println();
+		}
+		
+		System.out.println("    Final Score is "+score+" out of "+Environment.testSize+" ("+accuracy+")");
+		System.out.println();System.out.println();
+	}
+
 	public double sampleStandardNormalUnivariate(){ // return a sample from standard normal distribution
 		double r1 = 1,r2 = 1;
 		double tmp = r1*r1 + r2*r2;
@@ -266,5 +302,14 @@ public class iSVM {
 	public double sampleNormalUnivariate(double mean, double var ){ // variance = var = sigma * sigma 
 		double a = sampleStandardNormalUnivariate();
 		return Math.sqrt(var) * a + mean;
+	}
+
+	public void report() {
+		average /= Environment.dataSetNum;
+		System.out.println();System.out.println();
+		System.out.print("Accuracy : " + average);
+		System.out.println();System.out.println();
+		
+		
 	}
 }
