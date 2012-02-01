@@ -7,14 +7,15 @@ import java.util.List;
  * first do the discriminative model part.(generative part later)
  */
 public class iSVM {
-	private static final double alphaDP = 1.0;
+	private static final double alphaDP = 3.0;
 	private final int etaLength1 = 8; // for data setting 1
-	private final int R = 5; // repeating times in Algorithm 5
+	private final int R = 15; // repeating times in Algorithm 5
 	private final int Times = 100; // TODO
 	private int z[];
 	private double eta[][];
 	private int prediction[];
 	private int score = 0;
+	private List<Double> acc = new LinkedList<Double>();
 	private double accuracy = 0;
 	private double average = 0;
 	//test
@@ -49,13 +50,13 @@ public class iSVM {
 		prediction = new int[Environment.dataSetSize];
 	}
 
-	public void go(Vector4 v4, int setSize, int trainSize) {
+	public void go(Data v4, int setSize, int trainSize) {
 		init();
 		train(v4,setSize,trainSize);
 		test2(v4,setSize,trainSize);
 	}
 	
-	private void train(Vector4 v4, int setSize, int trainSize) {
+	private void train(Data v4, int setSize, int trainSize) {
 		for (int i = 0; i < Times; i ++){
 			int test1 = number[1];
 			step1(v4,setSize,trainSize);
@@ -99,7 +100,7 @@ public class iSVM {
 	 * test ( from 100 to 10000 - 1 )
 	 * regard p(z = i) = number[i] / trainSize;
 	 */
-	private void test(Vector4 v4, int setSize, int trainSize) {
+	private void test(Data v4, int setSize, int trainSize) {
 		double disF0,disF1;score = 0;
 		for (int i = trainSize; i < Environment.dataSetSize; i++){
 			disF0 = 0;
@@ -107,8 +108,8 @@ public class iSVM {
 			for (int j = 0; j <= cateIndexMax; j++){
 				if (number[j] <= 0)
 					continue;
-				disF0 += v4.disFunc(eta[j],i,0) * number[j] / (1.0 * trainSize);
-				disF1 += v4.disFunc(eta[j],i,1) * number[j] / (1.0 * trainSize);
+				disF0 += ((Vector4) v4).disFunc(eta[j],i,0) * number[j] / (1.0 * trainSize);
+				disF1 += ((Vector4) v4).disFunc(eta[j],i,1) * number[j] / (1.0 * trainSize);
 			}
 			if (disF0 > disF1)	prediction[i] = 0;
 			else prediction[i] = 1;
@@ -116,10 +117,10 @@ public class iSVM {
 			//test TODO
 			if (prediction[i] == 0) predic0++;
 			else predic1++;
-			if (v4.getLable(i) == 0) data0++;
+			if (((Vector4) v4).getLable(i) == 0) data0++;
 			else data1++;
 			
-			score += v4.lableTest(prediction[i], i);
+			score += ((Vector4) v4).lableTest(prediction[i], i);
 			
 		}
 	}
@@ -128,7 +129,7 @@ public class iSVM {
 	 * test ( from 100 to 10000 - 1 )
 	 * regard p(z = i) = 1 / cateNumber;
 	 */
-	private void test2(Vector4 v4, int setSize, int trainSize) {
+	private void test2(Data v4, int setSize, int trainSize) {
 		double disF0,disF1;score = 0;
 		for (int i = trainSize; i < Environment.dataSetSize; i++){
 			disF0 = 0;
@@ -136,8 +137,8 @@ public class iSVM {
 			for (int j = 0; j <= cateIndexMax; j++){
 				if (number[j] <= 0)
 					continue;
-				disF0 += v4.disFunc(eta[j],i,0) * 1 / (1.0 * cateNumber);
-				disF1 += v4.disFunc(eta[j],i,1) * 1 / (1.0 * cateNumber);
+				disF0 += ((Vector4) v4).disFunc(eta[j],i,0) * 1 / (1.0 * cateNumber);
+				disF1 += ((Vector4) v4).disFunc(eta[j],i,1) * 1 / (1.0 * cateNumber);
 //				System.out.println("F =: (0)"+v4.disFunc(eta[j],i,0) * 1 / (1.0 * cateNumber));
 //				System.out.println("F =: (1)"+v4.disFunc(eta[j],i,0) * 1 / (1.0 * cateNumber));
 			}
@@ -147,11 +148,11 @@ public class iSVM {
 			//test TODO
 			if (prediction[i] == 0) predic0++;
 			else predic1++;
-			if (v4.getLable(i) == 0) data0++;
+			if (((Vector4) v4).getLable(i) == 0) data0++;
 			else data1++;
 			
 			int t = score; // test
-			score += v4.lableTest(prediction[i], i);
+			score += ((Vector4) v4).lableTest(prediction[i], i);
 //			if (t == score){ // wrong
 //				System.out.print("--------------\nWrong\n   :\n");
 //				v4.printV(i);
@@ -177,6 +178,7 @@ public class iSVM {
 	
 	public void evaluation() {
 		accuracy = score * 1.0 / Environment.testSize;
+		acc.add(accuracy);
 		average += accuracy;
 		printResult();
 	}
@@ -185,7 +187,7 @@ public class iSVM {
 	/*
 	 * here I use exp_F(x,y,eta,z) (in paper iSVM, discriminative function) as the likelihood function.(problem //TODO)
 	 */
-	private void step1(Vector4 v4, int setSize, int trainSize) {
+	private void step1(Data v4, int setSize, int trainSize) {
 		int c;
 		double accept,r,m1,m2;
 		for (int k = 0; k < Environment.trainSize; k++){
@@ -199,8 +201,11 @@ public class iSVM {
 				}
 				// compute the acceptance probability; given f(x,y),eta,z
 				// that is,f(in vector4), eta[z[i]][], and eta[c]
-				m1 = v4.disFunc(eta[z[k]], k);
-				m2 = v4.disFunc(eta[c], k);
+				m1 = ((Vector4) v4).disFunc(eta[z[k]], k);
+//				System.out.println("old "+m1);
+				m2 = ((Vector4) v4).disFunc(eta[c], k);
+//				System.out.println("new "+m2);
+//				System.out.println("c = "+c);
 				if (m2 >= m1)
 					accept = 1;
 				else
@@ -222,12 +227,21 @@ public class iSVM {
 	 * draw Eta from G_0, that is , 8-dim gaussian 
 	 */
 	private void drawEta(int c) {
-		double r[] = new double [8];
-		for (int i = 0 ; i < 8 ; i++){
+		double r[] = new double [etaLength1];
+		for (int i = 0 ; i < etaLength1 ; i++){
 			r[i] = sampleStandardNormalUnivariate();
 		}
 		vectorAssign(eta[c],etaLength1,r);
 		return;
+	}
+	private double[] drawEta() {
+		double etaa[] = new double[etaLength1];
+		double r[] = new double [etaLength1];
+		for (int i = 0 ; i < etaLength1 ; i++){
+			r[i] = sampleStandardNormalUnivariate();
+		}
+		vectorAssign(etaa,etaLength1,r);
+		return etaa;
 	}
 	
 	private void vectorAssign(double[] a, int size, double[] b){
@@ -266,17 +280,68 @@ public class iSVM {
 		return minN;
 	}
 
-	private void step2(Vector4 v4, int setSize, int trainSize) {
-//		for (int i = 1; i <= cateIndexMax; i++){
-//			if (number[i]<=0)
-//				continue;		
-//			eta[i] = updateEta(i);
-//		}
+	private void step2(Data v4, int setSize, int trainSize) {
+		for (int i = 1; i <= cateIndexMax; i++){
+			if (number[i]<=0)
+				continue;		
+//			eta[i] = updateEta(v4,i);
+		}
 	}
 	
-	private double[] updateEta(int i) {
-		// TODO Auto-generated method stub
-		return null;
+	/*
+	 * update eta[z] according to the posterior distribution TODO
+	 * use rejection sampling.
+	 * (£¨Vector4£© v4)
+	 */
+	private double[] updateEta(Data v4, int com) {
+		double result[] = new double [etaLength1];
+		// which data is related to Component com
+		int[] da = new int[100];  // record this info
+		int size = 0;
+		for (int j = 0; j < Environment.trainSize; j ++){
+//			if (number[j] <= 0) continue;
+//			System.out.println("z["+j+"] = "+z[j]);
+			if (z[j] == com){
+				da[size] = j;
+				size++;
+			}
+		}
+		// given prior and related data, sample an eta from posterior
+		result = postSample(v4,da,size);
+		 
+		return result;
+	}
+
+	//given index v4, size,da
+	private double[] postSample(Data v4, int[] da, int size) {
+		double k = Math.pow(Math.E, 15);
+		double r = 0;
+		double result[] = new double [etaLength1];
+		boolean success = false;
+		double sumF = 0;
+		double max = 0;
+		int a = 0;
+		int time = 0;
+		do{
+			time++;
+			sumF = 0;
+			result = drawEta();	
+//			q_eta = getProG_0(result);
+//			r = Math.random() * k * q_eta; 
+			r = Math.random() * k; // omit q_eta because q_eta = p_eta_G0
+			for (int i = 0; i < size; i++){
+				sumF += ((Vector4) v4).disFunc(result, da[i]);
+			}
+			sumF /= Environment.reduce;
+//			System.out.println("sumf =  "+sumF+"  size = "+size);
+			if (sumF > max ) max = sumF;
+			if ( r < Math.exp(sumF)) success = true;
+			a ++;
+			if (a > 400) {k *= 0.5; a = 0;}
+		}while(success == false);
+//		System.out.println(k+" total time "+time+"  sumf =  "+sumF+"  size = "+size);
+//		System.exit(0);
+		return result;
 	}
 
 	// wrong!!: use c to update state[i] and all other state with the same state
@@ -368,7 +433,7 @@ public class iSVM {
 			System.out.println();
 		}
 		
-		System.out.println("    Final Score is "+score+" out of "+Environment.testSize+" ("+accuracy+")");
+		System.out.println("    Final Score is "+score+" out of "+Environment.testSize+"\n\t\t\t ("+accuracy+")");
 //		System.out.println("change time is "+change);
 		System.out.println();System.out.println();
 	}
@@ -377,6 +442,14 @@ public class iSVM {
 		average /= Environment.dataSetNum;
 		System.out.println();System.out.println();
 		System.out.print("Accuracy : " + average);
+		
+		Iterator<Double> it = acc.iterator();
+		double var = 0;
+		while (it.hasNext()){
+			var += Math.pow((Double)it.next()-average, 2);             // the nth category
+		}
+		var /= Environment.dataSetNum;
+		System.out.print("\nVariance : " + var+"\nSqrt(var): "+Math.sqrt(var));
 		System.out.println();System.out.println();
 		System.out.println("DataLable:   "+data0+" "+data1);
 		System.out.println("predictLable:"+predic0+" "+predic1);

@@ -55,6 +55,15 @@ class Vector4 extends Data{
 			return 0;
 	}
 	
+//	// sum of F,
+//	public double getSumF(int[] da, int size) {
+//		double r;
+//		for (int i = 0; i < size; i ++){
+//			r += disFunc();
+//		}
+//		return 0;
+//	}
+	
 	public double disFunc(double[] eta,int i){ // in train
 		if (lable[i] == 0){// then f(y,x) = (x[1],x[2],x[3],x[4],0,0,0,0)
 			return (eta[0] * v1[i] + eta[1] * v2[i] + eta[2] * v3[i] + eta[3] * v4[i]);
@@ -102,5 +111,7 @@ class Vector4 extends Data{
 		System.out.println("average: "+F * 1.0 / num);
 		System.out.println();System.out.println();
 	}
+
+
 	
 }
