@@ -9,10 +9,12 @@ import java.util.List;
 public class iSVM {
 	private static final double alphaDP = 3.0;
 	private final int etaLength1 = 8; // for data setting 1
+	private final int gammaLength1 = 4;
 	private final int R = 15; // repeating times in Algorithm 5
 	private final int Times = 100; // TODO
 	private int z[];
 	private double eta[][];
+	private double gamma[][];
 	private int prediction[];
 	private int score = 0;
 	private List<Double> acc = new LinkedList<Double>();
@@ -42,6 +44,10 @@ public class iSVM {
 		eta = new double[Environment.maxComponent][];
 		for (int i = 0; i < Environment.maxComponent; i++){
 			eta[i] = new double[etaLength1];
+		}
+		gamma = new double[Environment.maxComponent][];
+		for (int i = 0; i < Environment.maxComponent; i++){
+			gamma[i] = new double[gammaLength1];
 		}
 		number = new int[Environment.maxComponent+1];
 		for (int i = 0; i <= Environment.maxComponent; i++){
@@ -197,6 +203,7 @@ public class iSVM {
 					continue;
 				if (number[c] == 0){ // if c* is not in {c1,c2,...,cn}, draw theta from G_0, for c*
 //					drawTheta(c);
+					drawGamma(c);
 					drawEta(c);
 				}
 				// compute the acceptance probability; given f(x,y),eta,z
@@ -223,6 +230,19 @@ public class iSVM {
 		}
 		
 	}
+	
+	/*
+	 * draw gamma from G_0, that is , 4-dim gaussian 
+	 */
+	private void drawGamma(int c) {
+		double r[] = new double [gammaLength1];
+		for (int i = 0 ; i < gammaLength1 ; i++){
+			r[i] = sampleStandardNormalUnivariate();
+		}
+		vectorAssign(gamma[c],gammaLength1,r);
+		return;
+	}
+
 	/*
 	 * draw Eta from G_0, that is , 8-dim gaussian 
 	 */
