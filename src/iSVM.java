@@ -10,7 +10,7 @@ public class iSVM {
 	private static final double alphaDP = 1.0;
 	private final int etaLength1 = 8; // for data setting 1
 	private final int R = 5; // repeating times in Algorithm 5
-	private final int Times = 5000; // TODO
+	private final int Times = 100; // TODO
 	private int z[];
 	private double eta[][];
 	private int prediction[];
@@ -52,7 +52,7 @@ public class iSVM {
 	public void go(Vector4 v4, int setSize, int trainSize) {
 		init();
 		train(v4,setSize,trainSize);
-		test(v4,setSize,trainSize);
+		test2(v4,setSize,trainSize);
 	}
 	
 	private void train(Vector4 v4, int setSize, int trainSize) {
@@ -66,6 +66,17 @@ public class iSVM {
 				change ++;
 			}
 		}
+		
+		// without learning, totally random
+		/*
+		for (int i = 0; i < 4; i++){
+			drawEta(i);
+		}
+		number[1] = 33;
+		number[2] = 33;
+		number[3] = 34;
+		cateIndexMax = 3;
+		*/
 	}
 
 	private void init() {
@@ -86,17 +97,18 @@ public class iSVM {
 
 	/*
 	 * test ( from 100 to 10000 - 1 )
+	 * regard p(z = i) = number[i] / trainSize;
 	 */
 	private void test(Vector4 v4, int setSize, int trainSize) {
 		double disF0,disF1;score = 0;
-		for (int i = 100; i < Environment.dataSetSize; i++){
+		for (int i = trainSize; i < Environment.dataSetSize; i++){
 			disF0 = 0;
 			disF1 = 0;
 			for (int j = 0; j <= cateIndexMax; j++){
 				if (number[j] <= 0)
 					continue;
-				disF0 += v4.disFunc(eta[j],i,0) * number[j] / (1.0 * cateNumber);
-				disF1 += v4.disFunc(eta[j],i,1) * number[j] / (1.0 * cateNumber);
+				disF0 += v4.disFunc(eta[j],i,0) * number[j] / (1.0 * trainSize);
+				disF1 += v4.disFunc(eta[j],i,1) * number[j] / (1.0 * trainSize);
 			}
 			if (disF0 > disF1)	prediction[i] = 0;
 			else prediction[i] = 1;
@@ -112,6 +124,57 @@ public class iSVM {
 		}
 	}
 	
+	/*
+	 * test ( from 100 to 10000 - 1 )
+	 * regard p(z = i) = 1 / cateNumber;
+	 */
+	private void test2(Vector4 v4, int setSize, int trainSize) {
+		double disF0,disF1;score = 0;
+		for (int i = trainSize; i < Environment.dataSetSize; i++){
+			disF0 = 0;
+			disF1 = 0;
+			for (int j = 0; j <= cateIndexMax; j++){
+				if (number[j] <= 0)
+					continue;
+				disF0 += v4.disFunc(eta[j],i,0) * 1 / (1.0 * cateNumber);
+				disF1 += v4.disFunc(eta[j],i,1) * 1 / (1.0 * cateNumber);
+//				System.out.println("F =: (0)"+v4.disFunc(eta[j],i,0) * 1 / (1.0 * cateNumber));
+//				System.out.println("F =: (1)"+v4.disFunc(eta[j],i,0) * 1 / (1.0 * cateNumber));
+			}
+			if (disF0 > disF1)	prediction[i] = 0;
+			else prediction[i] = 1;
+			
+			//test TODO
+			if (prediction[i] == 0) predic0++;
+			else predic1++;
+			if (v4.getLable(i) == 0) data0++;
+			else data1++;
+			
+			int t = score; // test
+			score += v4.lableTest(prediction[i], i);
+//			if (t == score){ // wrong
+//				System.out.print("--------------\nWrong\n   :\n");
+//				v4.printV(i);
+//				System.out.println(cateNumber+" component");
+//				for (int j = 0; j <= cateIndexMax; j++){
+//					if (number[j] <= 0)
+//						continue;
+//					System.out.println("com "+j+" :"+v4.disFunc(eta[j],i,prediction[i]));
+//				}
+//			}
+//			else{
+//				System.out.print("--------------\nCorrect\n   :\n");
+//				v4.printV(i);
+//				for (int j = 0; j <= cateIndexMax; j++){
+//					if (number[j] <= 0)
+//						continue;
+//					System.out.println("com "+j+" :"+v4.disFunc(eta[j],i,prediction[i]));
+//				}
+//			}
+			
+		}
+	}
+	
 	public void evaluation() {
 		accuracy = score * 1.0 / Environment.testSize;
 		average += accuracy;
@@ -120,7 +183,7 @@ public class iSVM {
 	
 	
 	/*
-	 * here I use F(x,y,eta,z) (in paper iSVM, discriminative function) as the likelihood function.(problem //TODO)
+	 * here I use exp_F(x,y,eta,z) (in paper iSVM, discriminative function) as the likelihood function.(problem //TODO)
 	 */
 	private void step1(Vector4 v4, int setSize, int trainSize) {
 		int c;
@@ -141,7 +204,8 @@ public class iSVM {
 				if (m2 >= m1)
 					accept = 1;
 				else
-					accept = m2/m1;
+//					accept = m2/m1;
+					accept = Math.exp(m2 - m1);
 				r = Math.random();
 				if (r <= accept){
 					updateCate(k,c);

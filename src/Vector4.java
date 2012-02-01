@@ -7,6 +7,10 @@
 class Vector4 extends Data{
 	private double v1[],v2[],v3[],v4[];
 	private int lable[];
+	
+	// test TODO
+	private double F = 0;
+	private double num = 0;
 	Vector4(){
 		v1 = new double[Environment.dataSetSize];
 		v2 = new double[Environment.dataSetSize];
@@ -61,12 +65,24 @@ class Vector4 extends Data{
 	}
 	
 	public double disFunc(double[] eta,int i,int y){ // in test
+		double f = 0;
 		if (y == 0){// then f(y,x) = (x[1],x[2],x[3],x[4],0,0,0,0)
-			return (eta[0] * v1[i] + eta[1] * v2[i] + eta[2] * v3[i] + eta[3] * v4[i]);
+			f =(eta[0] * v1[i] + eta[1] * v2[i] + eta[2] * v3[i] + eta[3] * v4[i]);
+//			printV(i);
+//			System.out.println("F = "+f);
+			F += f;
+			num ++;
+			return f;
 		}
 		else{ // then f(y,x) = (0,0,0,0,x[1],x[2],x[3],x[4])
-			return (eta[4] * v1[i] + eta[5] * v2[i] + eta[6] * v3[i] + eta[7] * v4[i]);
+			f = (eta[4] * v1[i] + eta[5] * v2[i] + eta[6] * v3[i] + eta[7] * v4[i]);
+//			printV(i);
+//			System.out.println("F = "+f);
+			F += f;
+			num ++;
+			return f;
 		}
+		
 	}
 	
 	public int lableTest(int predic,int i){
@@ -79,6 +95,12 @@ class Vector4 extends Data{
 	public void printV(int i){
 		System.out.println("the "+i+"th : "+v1[i]+" "+v2[i]+" "+v3[i]+" "+v4[i]+" Lable: "+lable[i]);
 	}
-
+	public void printF(){
+		System.out.println();System.out.println();
+		System.out.println("F =  "+F);
+		System.out.println("num= "+num);
+		System.out.println("average: "+F * 1.0 / num);
+		System.out.println();System.out.println();
+	}
 	
 }

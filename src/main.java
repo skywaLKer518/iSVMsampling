@@ -21,6 +21,7 @@ public class main{
 			lk.evaluation();
 		}
 		lk.report();
+		v4.printF();
 		System.out.println(lk.changeTimes);
 		
 //		for (int i = 5000; i < 5030; i ++){
