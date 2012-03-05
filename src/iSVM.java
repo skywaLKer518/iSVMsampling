@@ -38,7 +38,6 @@ public class iSVM {
 	
 	
 	
-	
 	private final int R = 15; // repeating times in Algorithm 5
 	private final int Times = 100; // TODO
 
