@@ -5,16 +5,45 @@ import java.util.List;
 /*
  * model: infinite SVM
  * first do the discriminative model part.(generative part later)
+ * 
+ * Sample (/eta,z) together 
+ * use stochastic approximation algorithm to get optimal parameters
  */
 public class iSVM {
-	private static final double alphaDP = 3.0;
+	private static final int paraSize = Environment.dataCateNum * Environment.trainSize;
+	private static final int sampleNum = 100; // TODO
+	private static final double alphaDP = 1.0;
+	private static final double betaDP = 1.0;
+	private static final double C = 3.0;
 	private final int etaLength1 = 8; // for data setting 1
 	private final int gammaLength1 = 4;
-	private final int R = 15; // repeating times in Algorithm 5
-	private final int Times = 100; // TODO
-	private int z[];
+	
 	private double eta[][];
 	private double gamma[][];
+	private int z[];	
+	private double w[];
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	private final int R = 15; // repeating times in Algorithm 5
+	private final int Times = 100; // TODO
+
+	
+	
 	private int prediction[];
 	private int score = 0;
 	private List<Double> acc = new LinkedList<Double>();
@@ -26,7 +55,6 @@ public class iSVM {
 	private int change = 0;
 	
 	
-	//TODO
 	
 	/*
 	 * here use similar algorithm as in MCMC on DP Model, not Stick Breaking Process.
@@ -40,6 +68,7 @@ public class iSVM {
 	
 	
 	iSVM(){
+		w = new double[paraSize];
 		z = new int[Environment.dataSetSize];
 		eta = new double[Environment.maxComponent][];
 		for (int i = 0; i < Environment.maxComponent; i++){
@@ -49,11 +78,11 @@ public class iSVM {
 		for (int i = 0; i < Environment.maxComponent; i++){
 			gamma[i] = new double[gammaLength1];
 		}
-		number = new int[Environment.maxComponent+1];
-		for (int i = 0; i <= Environment.maxComponent; i++){
-			number[i] = 0;
-		}
-		prediction = new int[Environment.dataSetSize];
+//		number = new int[Environment.maxComponent+1];
+//		for (int i = 0; i <= Environment.maxComponent; i++){
+//			number[i] = 0;
+//		}
+//		prediction = new int[Environment.dataSetSize];
 	}
 
 	public void go(Data v4, int setSize, int trainSize) {
@@ -63,43 +92,34 @@ public class iSVM {
 	}
 	
 	private void train(Data v4, int setSize, int trainSize) {
-		for (int i = 0; i < Times; i ++){
-			int test1 = number[1];
-			step1(v4,setSize,trainSize);
-			step2(v4,setSize,trainSize);
-			int test2 = number[1];
-			if (test1 != 0 && test2 == 0){
-				changeTimes ++;
-				change ++;
-			}
-		}
+//		for (int i = 0; i < Times; i ++){
+//			int test1 = number[1];
+//			step1(v4,setSize,trainSize);
+//			step2(v4,setSize,trainSize);
+//			int test2 = number[1];
+//			if (test1 != 0 && test2 == 0){
+//				changeTimes ++;
+//				change ++;
+//			}
+//		}
 		
-		// without learning, totally random
-		/*
-		for (int i = 0; i < 4; i++){
-			drawEta(i);
-		}
-		number[1] = 33;
-		number[2] = 33;
-		number[3] = 34;
-		cateIndexMax = 3;
-		*/
+	
 	}
 
 	private void init() {
-		for (int i = 0; i <= Environment.maxComponent; i++){
-			number[i] = 0;
-		}
-		cateNumber = 0;
-		cateIndexMax = 0;
-		minN = 1;
-		Observed = 0;
-		cateAlive.clear();
-		for (int i = 0; i < Environment.trainSize; i++){
-			z[i] = 0;
-		}
-		
-		change++;//test
+//		for (int i = 0; i <= Environment.maxComponent; i++){
+//			number[i] = 0;
+//		}
+//		cateNumber = 0;
+//		cateIndexMax = 0;
+//		minN = 1;
+//		Observed = 0;
+//		cateAlive.clear();
+//		for (int i = 0; i < Environment.trainSize; i++){
+//			z[i] = 0;
+//		}
+//		
+//		change++;//test
 	}
 
 	/*
@@ -311,7 +331,7 @@ public class iSVM {
 	/*
 	 * update eta[z] according to the posterior distribution TODO
 	 * use rejection sampling.
-	 * (£¨Vector4£© v4)
+	 * ((Vector4) v4)
 	 */
 	private double[] updateEta(Data v4, int com) {
 		double result[] = new double [etaLength1];

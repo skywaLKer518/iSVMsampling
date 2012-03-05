@@ -4,6 +4,7 @@ public class Environment{
 	static final int dataSetSize = 10000;
 	static final int dataSetNum = 50;
 	static final int maxComponent = 100;
+	static final int dataCateNum = 2;
 	static final double reduce = 30;
 	
 	
