@@ -21,7 +21,11 @@ public class iSVM {
 	private double eta[][];
 	private double gamma[][];
 	private int z[];	
-	private double w[];
+	private double w[];					// w_d1_y1 w_d1_y2 ... w_d2_y1 w_d2_y2 ...
+	private double F[];                 // F_d1_y1 F_d1_y2 ... F_d2_y1 F_d2_y2 ...
+	private double EF[];
+//	private double f[];
+	private double l[];
 	
 	
 	
@@ -68,6 +72,9 @@ public class iSVM {
 	
 	iSVM(){
 		w = new double[paraSize];
+		F = new double[paraSize];
+		EF = new double[paraSize];
+		l = new double[paraSize];
 		z = new int[Environment.dataSetSize];
 		eta = new double[Environment.maxComponent][];
 		for (int i = 0; i < Environment.maxComponent; i++){
@@ -89,7 +96,14 @@ public class iSVM {
 		train(v4,setSize,trainSize);
 		test2(v4,setSize,trainSize);
 	}
-	
+
+	/*
+	 * train parameter w[], (/eta and Z)
+	 * stochastic approximation w = w - a_k * G(w)
+	 * set a_k = 1/k
+	 * G(w) = B - EF
+	 * B_y,d = l_y,d,
+	 */
 	private void train(Data v4, int setSize, int trainSize) {
 //		for (int i = 0; i < Times; i ++){
 //			int test1 = number[1];
@@ -101,11 +115,71 @@ public class iSVM {
 //				change ++;
 //			}
 //		}
-		
+		int k = 1;
+		do {
+			for (int i = 0; i < paraSize; i++){
+				EF[i] = 0;
+			}
+			// sample N (z,/eta) compute F[j]
+			for (int j = 0; j < sampleNum; j++){
+				// sample z,/eta
+				samplePara();
+				// compute F[i],EF[i]
+				computeF(v4);
+			}
+			for (int i = 0; i < paraSize; i++){
+				EF[i] /= (1.0*sampleNum);
+				w[i] -= 1 / (1.0 * k) * (l[i] - EF[i]);
+			}
+			k++;
+		}while (true);
 	
 	}
 
+	private void computeF(Data v4) {
+		for (int i = 0; i < paraSize; i++){
+			int d = i / Environment.dataCateNum;
+			int y = i % Environment.dataCateNum;
+			int yd = ((Vector4) v4).getLable(d);
+			if (yd == y) F[i] = 0;
+			else
+				F[i] = ((Vector4) v4).computeF(eta[d],d,y,yd);
+			EF[i] += F[i] * q??;
+		}
+	}
+
+	private void samplePara() {
+		int zMin = 99999, zMax = -1;
+		boolean used[] = new boolean[Environment.maxComponent];
+		// sample Z
+		for (int i = 0; i < Environment.trainSize; i++){
+			z[i] = samplePriorZ();
+			if (z[i] > zMax) zMax = z[i];
+			if (z[i] < zMin) zMin = z[i];
+			used[z[i]] = true;
+		}
+		// sample /eta
+		for (int i = zMin; i < zMax; i ++){
+			if (!used[i]) continue;
+			drawEta(i);
+		}
+	}
+
+	private int samplePriorZ() {
+		double a = Math.random();
+		double b = 1 / ( 1 + alphaDP );
+		int target = 1;
+		do {
+			if (a < b) return target;
+			target ++;
+			b *= alphaDP / (1 + alphaDP);
+		}while (true);
+	}
+
 	private void init() {
+		for (int i = 0; i < paraSize; i++){
+			w[i] = Math.random() * C;
+		}
 //		for (int i = 0; i <= Environment.maxComponent; i++){
 //			number[i] = 0;
 //		}
