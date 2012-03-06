@@ -105,18 +105,10 @@ public class iSVM {
 	 * B_y,d = l_y,d,
 	 */
 	private void train(Data v4, int setSize, int trainSize) {
-//		for (int i = 0; i < Times; i ++){
-//			int test1 = number[1];
-//			step1(v4,setSize,trainSize);
-//			step2(v4,setSize,trainSize);
-//			int test2 = number[1];
-//			if (test1 != 0 && test2 == 0){
-//				changeTimes ++;
-//				change ++;
-//			}
-//		}
 		int k = 1;
+		double Z = 0;
 		do {
+			Z = 0;
 			for (int i = 0; i < paraSize; i++){
 				EF[i] = 0;
 			}
@@ -125,10 +117,23 @@ public class iSVM {
 				// sample z,/eta
 				samplePara();
 				// compute F[i],EF[i]
-				computeF(v4);
+				computeF(v4,Z);
+				double e = 0;
+				for (int i = 0; i < paraSize; i++){
+					e += F[i] * w[i];
+				}
+				double priorEta = probEta(eta[]);
+				Z += Math.exp(e) * priorEta * priorZ;
+				double expWF = Math.exp(e);
+				for (int i = 0; i < paraSize; i++){
+					EF[i] += F[i] * expWF;
+				}
 			}
+//			for (int j = 0; j < sampleNum; j++){
+//				
+//			}
 			for (int i = 0; i < paraSize; i++){
-				EF[i] /= (1.0*sampleNum);
+				EF[i] /= (1.0*sampleNum*Z);
 				w[i] -= 1 / (1.0 * k) * (l[i] - EF[i]);
 			}
 			k++;
@@ -136,7 +141,7 @@ public class iSVM {
 	
 	}
 
-	private void computeF(Data v4) {
+	private void computeF(Data v4, double Z) {
 		for (int i = 0; i < paraSize; i++){
 			int d = i / Environment.dataCateNum;
 			int y = i % Environment.dataCateNum;
@@ -144,7 +149,6 @@ public class iSVM {
 			if (yd == y) F[i] = 0;
 			else
 				F[i] = ((Vector4) v4).computeF(eta[d],d,y,yd);
-			EF[i] += F[i] * q??;
 		}
 	}
 
