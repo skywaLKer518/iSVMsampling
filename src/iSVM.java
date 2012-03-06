@@ -26,9 +26,11 @@ public class iSVM {
 	private double EF[];
 //	private double f[];
 	private double l[];
-	
-	
-	
+	private double mF[][];
+	private double logPrior[];
+	private double logPost[];
+	private double logV[];
+	private double V[];
 	
 	
 	
@@ -75,7 +77,16 @@ public class iSVM {
 		F = new double[paraSize];
 		EF = new double[paraSize];
 		l = new double[paraSize];
+		logPrior = new double[sampleNum];
+		logPost  = new double[sampleNum];
+		V = new double[sampleNum];
+		logV = new double[sampleNum];
+		
 		z = new int[Environment.dataSetSize];
+		mF = new double[paraSize][];
+		for (int i = 0;i  < paraSize; i++){
+			mF[i] = new double[sampleNum];
+		}
 		eta = new double[Environment.maxComponent][];
 		for (int i = 0; i < Environment.maxComponent; i++){
 			eta[i] = new double[etaLength1];
@@ -116,39 +127,45 @@ public class iSVM {
 			for (int j = 0; j < sampleNum; j++){
 				// sample z,/eta
 				samplePara();
-				// compute F[i],EF[i]
-				computeF(v4,Z);
-				double e = 0;
-				for (int i = 0; i < paraSize; i++){
-					e += F[i] * w[i];
-				}
-				double priorEta = probEta(eta[]);
-				Z += Math.exp(e) * priorEta * priorZ;
-				double expWF = Math.exp(e);
-				for (int i = 0; i < paraSize; i++){
-					EF[i] += F[i] * expWF;
-				}
+				// compute mF
+				computeF(v4,j);
 			}
-//			for (int j = 0; j < sampleNum; j++){
-//				
-//			}
+			for (int j = 0; j < sampleNum; j++){
+				for (int i = 0; i < paraSize; i++){
+					logV[j] += mF[i][j] * w[i];
+				}
+				V[j] = Math.exp(logV[j]);
+			}
+			for (int j = 0; j < sampleNum; j++){
+				Z += V[j];  // now is nZ
+			}
+			double partition = 1 / Z;
+			for (int i = 0; i < paraSize; i ++){
+				for (int j = 0; j < sampleNum; j ++){
+					EF[i] += mF[i][j] * V[j];
+				}
+				EF[i] *= partition;
+			}
 			for (int i = 0; i < paraSize; i++){
-				EF[i] /= (1.0*sampleNum*Z);
-				w[i] -= 1 / (1.0 * k) * (l[i] - EF[i]);
+				w[i] -= 1 / (1.0 * k) * (-l[i] + EF[i]);
 			}
 			k++;
-		}while (true);
-	
+		}
+		while (true);
 	}
 
-	private void computeF(Data v4, double Z) {
+	private void computeF(Data v4,int sample) {
 		for (int i = 0; i < paraSize; i++){
 			int d = i / Environment.dataCateNum;
 			int y = i % Environment.dataCateNum;
 			int yd = ((Vector4) v4).getLable(d);
 			if (yd == y) F[i] = 0;
-			else
+			else{
 				F[i] = ((Vector4) v4).computeF(eta[d],d,y,yd);
+				mF[i][sample] = ((Vector4) v4).computeF(eta[d],d,y,yd);
+			}
+				
+				
 		}
 	}
 
