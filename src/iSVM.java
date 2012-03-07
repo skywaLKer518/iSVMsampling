@@ -10,6 +10,7 @@ import java.util.List;
  * use stochastic approximation algorithm to get optimal parameters
  */
 public class iSVM {
+	private static final double stoppingCriterion = 50;
 	private static final int paraSize = Environment.dataCateNum * Environment.trainSize;
 	private static final int sampleNum = 100; // TODO
 	private static final double alphaDP = 1.0;
@@ -24,6 +25,7 @@ public class iSVM {
 	private double w[];					// w_d1_y1 w_d1_y2 ... w_d2_y1 w_d2_y2 ...
 	private double F[];                 // F_d1_y1 F_d1_y2 ... F_d2_y1 F_d2_y2 ...
 	private double EF[];
+	private double G[];
 //	private double f[];
 	private double l[];
 	private double mF[][];
@@ -76,6 +78,7 @@ public class iSVM {
 		w = new double[paraSize];
 		F = new double[paraSize];
 		EF = new double[paraSize];
+		G = new double[paraSize];
 		l = new double[paraSize];
 		logPrior = new double[sampleNum];
 		logPost  = new double[sampleNum];
@@ -131,26 +134,41 @@ public class iSVM {
 				computeF(v4,j);
 			}
 			for (int j = 0; j < sampleNum; j++){
+				logV[j] = 0;
 				for (int i = 0; i < paraSize; i++){
 					logV[j] += mF[i][j] * w[i];
 				}
 				V[j] = Math.exp(logV[j]);
+				System.out.println("logV["+j+"]  = " + logV[j]);
+				System.out.println("V["+j+"]  = " + V[j]);
 			}
+			
 			for (int j = 0; j < sampleNum; j++){
 				Z += V[j];  // now is nZ
 			}
 			double partition = 1 / Z;
+			
 			for (int i = 0; i < paraSize; i ++){
 				for (int j = 0; j < sampleNum; j ++){
 					EF[i] += mF[i][j] * V[j];
 				}
 				EF[i] *= partition;
 			}
+			double delta = 0;
 			for (int i = 0; i < paraSize; i++){
-				w[i] -= 1 / (1.0 * k) * (-l[i] + EF[i]);
+				G[i] = EF[i] - l[i];
+				delta += G[i] * G[i];
+			}
+			System.out.println("k = "+k+"; ");
+			System.out.println("delta  = " + delta);
+			if (delta < stoppingCriterion)
+				break;
+			for (int i = 0; i < paraSize; i++){
+				w[i] -= 1 / (1.0 * k) * G[i];
 			}
 			k++;
 		}
+//		while( k == 1);
 		while (true);
 	}
 
@@ -159,9 +177,9 @@ public class iSVM {
 			int d = i / Environment.dataCateNum;
 			int y = i % Environment.dataCateNum;
 			int yd = ((Vector4) v4).getLable(d);
-			if (yd == y) F[i] = 0;
+			if (yd == y) mF[i][sample] = 0;
 			else{
-				F[i] = ((Vector4) v4).computeF(eta[d],d,y,yd);
+//				F[i] = ((Vector4) v4).computeF(eta[d],d,y,yd);
 				mF[i][sample] = ((Vector4) v4).computeF(eta[d],d,y,yd);
 			}
 				
@@ -193,6 +211,7 @@ public class iSVM {
 		do {
 			if (a < b) return target;
 			target ++;
+			a -= b;
 			b *= alphaDP / (1 + alphaDP);
 		}while (true);
 	}
