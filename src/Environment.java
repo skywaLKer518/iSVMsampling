@@ -2,7 +2,7 @@ public class Environment{
 	static final int trainSize = 100;
 	static final int testSize = 9900;
 	static final int dataSetSize = 10000;
-	static final int dataSetNum = 50;
+	static final int dataSetNum = 1;//50;
 	static final int maxComponent = 100;
 	static final int dataCateNum = 2;
 	static final double reduce = 30;

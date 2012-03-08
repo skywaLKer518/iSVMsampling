@@ -116,7 +116,8 @@ class Vector4 extends Data{
 		return (ds[4*yd] - ds[4*y] ) * v1[d] + (ds[4*yd + 1] - ds[4*y + 1]) * v2[d]
 				+ (ds[4*yd + 2] - ds[4*y + 2]) * v3[d] + (ds[4*yd + 3] - ds[4*y + 3]) * v4[d];
 	}
-
-
 	
+	public double computeF(double[] ds, int d, int y) {
+		return ds[4 * y] * v1[d] + ds[4 * y + 1] * v2[d] + ds[4 * y + 2]* v3[d] + ds[4 * y + 3] * v4[d];
+	}
 }

@@ -10,9 +10,9 @@ import java.util.List;
  * use stochastic approximation algorithm to get optimal parameters
  */
 public class iSVM {
-	private static final double stoppingCriterion = 50;
+	private static final double stoppingCriterion = 10;
 	private static final int paraSize = Environment.dataCateNum * Environment.trainSize;
-	private static final int sampleNum = 100; // TODO
+	private static final int sampleNum = 500; // TODO
 	private static final double alphaDP = 1.0;
 	private static final double betaDP = 1.0;
 	private static final double C = 3.0;
@@ -33,13 +33,13 @@ public class iSVM {
 	private double logPost[];
 	private double logV[];
 	private double V[];
+	private double Z_w;
 	
 	
 	
 	
 	
-	
-	
+	double p_0[] = new double[sampleNum]; // test
 	
 	
 	
@@ -90,8 +90,8 @@ public class iSVM {
 		for (int i = 0;i  < paraSize; i++){
 			mF[i] = new double[sampleNum];
 		}
-		eta = new double[Environment.maxComponent][];
-		for (int i = 0; i < Environment.maxComponent; i++){
+		eta = new double[sampleNum][];
+		for (int i = 0; i < sampleNum; i++){
 			eta[i] = new double[etaLength1];
 		}
 		gamma = new double[Environment.maxComponent][];
@@ -102,13 +102,14 @@ public class iSVM {
 //		for (int i = 0; i <= Environment.maxComponent; i++){
 //			number[i] = 0;
 //		}
-//		prediction = new int[Environment.dataSetSize];
+		prediction = new int[Environment.dataSetSize];
 	}
 
 	public void go(Data v4, int setSize, int trainSize) {
 		init();
 		train(v4,setSize,trainSize);
-		test2(v4,setSize,trainSize);
+		test(v4,setSize,trainSize);
+//		test2(v4,setSize,trainSize);
 	}
 
 	/*
@@ -117,15 +118,16 @@ public class iSVM {
 	 * set a_k = 1/k
 	 * G(w) = B - EF
 	 * B_y,d = l_y,d,
+	 * 
+	 * logV = FW + logp_0 - logq_0 = FW
+	 * EF = 1/(nZ) * FV
+	 * Z = 1/n * sigma V
 	 */
 	private void train(Data v4, int setSize, int trainSize) {
 		int k = 1;
 		double Z = 0;
 		do {
 			Z = 0;
-			for (int i = 0; i < paraSize; i++){
-				EF[i] = 0;
-			}
 			// sample N (z,/eta) compute F[j]
 			for (int j = 0; j < sampleNum; j++){
 				// sample z,/eta
@@ -139,16 +141,15 @@ public class iSVM {
 					logV[j] += mF[i][j] * w[i];
 				}
 				V[j] = Math.exp(logV[j]);
-				System.out.println("logV["+j+"]  = " + logV[j]);
-				System.out.println("V["+j+"]  = " + V[j]);
+//				System.out.println("logV["+j+"]  = " + logV[j]);
+//				System.out.println("V["+j+"]  = " + V[j]);
+				Z += V[j];
 			}
-			
-			for (int j = 0; j < sampleNum; j++){
-				Z += V[j];  // now is nZ
-			}
-			double partition = 1 / Z;
+			Z = Z / (sampleNum * 1.0);
+			double partition = 1 / (Z * sampleNum);
 			
 			for (int i = 0; i < paraSize; i ++){
+				EF[i] = 0;
 				for (int j = 0; j < sampleNum; j ++){
 					EF[i] += mF[i][j] * V[j];
 				}
@@ -163,13 +164,23 @@ public class iSVM {
 			System.out.println("delta  = " + delta);
 			if (delta < stoppingCriterion)
 				break;
+			double m = (1 / (1.0 * k));
 			for (int i = 0; i < paraSize; i++){
-				w[i] -= 1 / (1.0 * k) * G[i];
+				w[i] -= m * G[i];
+				if (w[i] > C)					w[i] = C;
+				if (w[i] < 0)					w[i] = 0;
 			}
 			k++;
 		}
-//		while( k == 1);
 		while (true);
+
+		
+		Z_w = Z;
+		Log log = new Log("w.txt");
+		for (int i = 0; i < paraSize; i++){
+			log.outln(w[i]);
+		}
+		log.close();
 	}
 
 	private void computeF(Data v4,int sample) {
@@ -179,11 +190,8 @@ public class iSVM {
 			int yd = ((Vector4) v4).getLable(d);
 			if (yd == y) mF[i][sample] = 0;
 			else{
-//				F[i] = ((Vector4) v4).computeF(eta[d],d,y,yd);
-				mF[i][sample] = ((Vector4) v4).computeF(eta[d],d,y,yd);
+				mF[i][sample] = ((Vector4) v4).computeF(eta[z[d]],d,y,yd);
 			}
-				
-				
 		}
 	}
 
@@ -240,6 +248,36 @@ public class iSVM {
 	 * regard p(z = i) = number[i] / trainSize;
 	 */
 	private void test(Data v4, int setSize, int trainSize) {
+		double p[] = new double[sampleNum];
+		for (int j = 0; j < sampleNum; j++){
+			p_0[j] = getP_0(j);			
+		} 
+		Log log = new Log("probability of parameters");
+		log.outln("partition is "+ Z_w);
+		for (int i = 0; i < sampleNum; i ++){
+			
+			p[i] = V[i] / Z_w;
+			log.outln(p[i]+"  V: "+V[i]+"  Z_w: "+Z_w);
+		}
+		log.close();
+		double disF[] = new double[Environment.dataCateNum];
+		
+		score = 0;
+		for (int i = trainSize; i < Environment.dataSetSize; i++){
+			disF[0] = 0; disF[1] = 0;
+			for (int j = 0; j < Environment.dataCateNum; j++){
+				for (int k = 0; k < sampleNum; k ++){
+					disF[j] += ((Vector4) v4).computeF(eta[z[k]],i,j) * p[k];	
+				}
+			}
+			if (disF[0] > disF[1])
+				prediction[i] = 0;
+			else
+				prediction[i] = 1;
+			score += ((Vector4) v4).lableTest(prediction[i], i);
+		}
+		
+		/*
 		double disF0,disF1;score = 0;
 		for (int i = trainSize; i < Environment.dataSetSize; i++){
 			disF0 = 0;
@@ -262,6 +300,7 @@ public class iSVM {
 			score += ((Vector4) v4).lableTest(prediction[i], i);
 			
 		}
+		*/
 	}
 	
 	/*
@@ -576,15 +615,15 @@ public class iSVM {
 	private void printResult(){
 		System.out.println("Test Result\n---------------------------");
 		System.out.print("    cateIndexMax: "+cateIndexMax+"\n    cateNumber:   "+cateNumber+"\n    MinN:         "+minN+"\n");
-		for (int j = 0; j <= cateIndexMax; j++){
-			if (number[j] <= 0)
-				continue;
-			System.out.print("    Category "+j+" ("+number[j]+"), eta = \n        ");
-			for (int i = 0; i < 8; i++){
-				System.out.print(eta[j][i]+"----");
-			}
-			System.out.println();
-		}
+//		for (int j = 0; j <= cateIndexMax; j++){
+//			if (number[j] <= 0)
+//				continue;
+//			System.out.print("    Category "+j+" ("+number[j]+"), eta = \n        ");
+//			for (int i = 0; i < 8; i++){
+//				System.out.print(eta[j][i]+"----");
+//			}
+//			System.out.println();
+//		}
 		
 		System.out.println("    Final Score is "+score+" out of "+Environment.testSize+"\n\t\t\t ("+accuracy+")");
 //		System.out.println("change time is "+change);
