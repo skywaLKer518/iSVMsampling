@@ -12,7 +12,7 @@ import java.util.List;
 public class iSVM {
 	private static final double stoppingCriterion = 10;
 	private static final int paraSize = Environment.dataCateNum * Environment.trainSize;
-	private static final int sampleNum = 500; // TODO
+	private static final int sampleNum = 2000; // TODO
 	private static final double alphaDP = 1.0;
 	private static final double betaDP = 1.0;
 	private static final double C = 3.0;
@@ -249,16 +249,20 @@ public class iSVM {
 	 */
 	private void test(Data v4, int setSize, int trainSize) {
 		double p[] = new double[sampleNum];
+		double sum = 0;
 		for (int j = 0; j < sampleNum; j++){
 			p_0[j] = getP_0(j);			
 		} 
-		Log log = new Log("probability of parameters");
+		Log log = new Log("probability of parameters.txt");
 		log.outln("partition is "+ Z_w);
 		for (int i = 0; i < sampleNum; i ++){
 			
-			p[i] = V[i] / Z_w;
+			p[i] = V[i] / Z_w * p_0[i];
+			sum += p[i];
 			log.outln(p[i]+"  V: "+V[i]+"  Z_w: "+Z_w);
 		}
+		log.newline();
+		log.outln(sum);
 		log.close();
 		double disF[] = new double[Environment.dataCateNum];
 		
@@ -303,6 +307,28 @@ public class iSVM {
 		*/
 	}
 	
+	private double getP_0(int j) {
+		double a1 = 0, a2 = 0; // a1 for eta, a2 for Z
+//		double sum = 0;
+//		for (int i = 0; i < sampleNum; i++){
+//			a1 += norm2(eta[z[i]],etaLength1);
+//			sum += z[i];
+//		}
+		a1 = norm2(eta[z[j]],etaLength1);
+		a1 = Math.exp(-0.5 * a1);
+		a1 *= Math.pow(2*Math.PI, -0.5 * etaLength1);
+		a2 = 1/(1+alphaDP) * Math.pow(alphaDP / (1+alphaDP), z[j] - 1);
+		return a1 * a2;
+	}
+
+	private double norm2(double[] ds, int etaLength12) {
+		double r = 0;
+		for (int j = 0; j < etaLength12; j++){
+			r += ds[j] * ds[j];
+		}
+		return r;
+	}
+
 	/*
 	 * test ( from 100 to 10000 - 1 )
 	 * regard p(z = i) = 1 / cateNumber;
