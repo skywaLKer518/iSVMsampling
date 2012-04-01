@@ -19,6 +19,7 @@ public class main{
 			v4.newData();
 			lk.go(v4,Environment.dataSetSize,Environment.trainSize);
 			lk.evaluation();
+//			v4.testSample(1000000,1,0.0001);
 		}
 		lk.report();
 		v4.printF();

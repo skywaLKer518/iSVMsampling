@@ -1,3 +1,5 @@
+import java.text.NumberFormat;
+
 /*
  * setting 1
  * u1 ~ N(1,1),u2 ~ N(2,1)
@@ -20,35 +22,85 @@ class Vector4 extends Data{
 	}
 	
 	void newData(){
+		double var1,var2,mean1, mean2;
+		mean1 = sampleNormalUnivariate(1,1);
+		mean2 = sampleNormalUnivariate(2,1);
+		var1 = Math.exp(sampleNormalUnivariate(0,2*2));
+		var2 = Math.exp(sampleNormalUnivariate(0,2*2));
 		for(int i = 0; i < Environment.dataSetSize / 2; i++){
-			v1[i] = sampleNormalUnivariate(1,1);
-			v2[i] = sampleNormalUnivariate(1,1);
-			v3[i] = sampleNormalUnivariate(1,1);
-			v4[i] = sampleNormalUnivariate(1,1);
+			v1[i] = sampleNormalUnivariate(mean1,var1);
+			v2[i] = sampleNormalUnivariate(mean1,var1);
+			v3[i] = sampleNormalUnivariate(mean1,var1);
+			v4[i] = sampleNormalUnivariate(mean1,var1);
 		}
 		for(int i = Environment.dataSetSize / 2; i <Environment.dataSetSize; i++){
-			v1[i] = sampleNormalUnivariate(2,1);
-			v2[i] = sampleNormalUnivariate(2,1);
-			v3[i] = sampleNormalUnivariate(2,1);
-			v4[i] = sampleNormalUnivariate(2,1);
+			v1[i] = sampleNormalUnivariate(mean2,var2);
+			v2[i] = sampleNormalUnivariate(mean2,var2);
+			v3[i] = sampleNormalUnivariate(mean2,var2);
+			v4[i] = sampleNormalUnivariate(mean2,var2);
 		}
+
+		NumberFormat num = NumberFormat.getInstance();
+		num.setMinimumFractionDigits(6);
+		
+		Log data = new Log("newData.txt");
 		for (int i = 0; i < Environment.dataSetSize; i++){
-			v1[i] *= Math.sqrt(Math.exp(sampleNormalUnivariate(0,2*2)));
-			v2[i] *= Math.sqrt(Math.exp(sampleNormalUnivariate(0,2*2)));
-			v3[i] *= Math.sqrt(Math.exp(sampleNormalUnivariate(0,2*2)));
-			v4[i] *= Math.sqrt(Math.exp(sampleNormalUnivariate(0,2*2)));
 			lable[i] = Lable(i);
+			data.outln((lable[i]+1)+" "+num.format(v1[i])+" "+num.format(v2[i]) + " "+num.format(v3[i])+" "+num.format(v4[i]));
 		}
+		data.close();
 		System.out.println("Data generation completed!");
 	}
-
+	public void testSample(int times,double m, double v){
+		double mean = 0, var = 0;int k = 0,i = 0;
+		double re[] = new double[10000000];
+		while(k < times){
+			double a = 0;
+			a = sampleNormalUnivariate(m,v);
+			System.out.println(a);
+			re[k] = a;
+			mean +=a;
+			k++;
+		}
+		mean = mean / times;
+		while(i < times){
+			var += (mean - re[i]) * (mean - re[i]);
+			i++;
+		}
+		var = var / times;
+		System.out.println("mean = "+mean);
+		System.out.println("var = "+var);
+	}
+	
+	public void testSample2(int times,double m, double v){
+		double mean = 0, var = 0;int k = 0,i = 0;
+		double re[] = new double[10000000];
+		while(k < times){
+			double a = 0;
+			a = Math.random()-0.5;
+			re[k] = a;
+			mean +=a;
+			k++;
+		}
+		mean = mean / times;
+		while(i < times){
+			var += (mean - re[i]) * (mean - re[i]);
+			i++;
+		}
+		var = var / times;
+		System.out.println("mean = "+mean);
+		System.out.println("var = "+var);
+	}
+	
+	
 	private int Lable(int i) {
 		double a,b,c,theta,p;
-		a = sampleNormalUnivariate(1,0.5*0.5);
-		b = sampleNormalUnivariate(1,0.5*0.5);
-		c = sampleNormalUnivariate(1,0.5*0.5);
+		a = sampleNormalUnivariate(1,0.25);
+		b = sampleNormalUnivariate(1,0.25);
+		c = sampleNormalUnivariate(1,0.25);
 		theta = - a * Math.sin(v1[i] * v1[i] * v1[i] + 1.2) -v1[i] * Math.cos(b * v2[i] + 0.7) - c * v3[i] + 2;
 		p = 1 / (1 + Math.exp(-theta));
+//		System.out.println("p = "+p);
 		if (Math.random() < p)
 			return 1;
 		else

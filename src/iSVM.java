@@ -221,6 +221,11 @@ public class iSVM {
 		}
 		while (true);
 
+		Log good = new Log("success.txt");
+		for (int i = 0; i < paraSize; i ++){
+			good.outln(w[i]);
+		}
+		good.close();
 		
 		Z_w = Z;
 		Log log = new Log("w.txt");
