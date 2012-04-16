@@ -32,7 +32,7 @@ public class MCMC {
 		this.stateNum = trainSize;
 		this.alpha = alpha;
 		this.w = w;
-//		readW();
+		//readW();
 
 		miu = new Vector8[Environment.trainSize];
 		wf =  new Vector8[Environment.trainSize];
@@ -75,6 +75,8 @@ public class MCMC {
 //			System.out.println("w[2*"+j+"+1] = "+w[2*j+1]);
 //		}
 		//
+		
+		
 //		Log ww = new Log("oneWsample2.txt");
 //		for (int i = 0; i < 200; i++){
 //			ww.outln(this.w[i]);
@@ -108,14 +110,6 @@ public class MCMC {
 	}
 	public void test(){
 		System.out.println("this is in test func");
-//		Vector8 t1 = new Vector8();
-//		Vector8 t2 = new Vector8();
-//		t1.add(wf[5]);
-//		t2 = t1;
-//		t2.add(wf[5]);
-//		t1.print();
-//		t2.print();
-		
 		System.out.println("this is the end in test func");
 	}
 	
@@ -151,13 +145,11 @@ public class MCMC {
 	public void go(){
 		int c = 0;//,yy = 0;;
 		double old,nnew;
-		double accept = 0,r = 0;
-//		Vector8 miu1 = new Vector8();
-//		Vector8 miu2 = new Vector8();
-//		double [] tmp = new double[8];
+		double accept = 0, r = 0;
 		initialZ();
 		for (int i = 0; i <Environment.Times; i++ ){
 			// debug
+			/*
 			System.out.println("\nCurrent state is :");
 			for (int j = 0; j < stateNum; j ++){
 				System.out.print(z[j]+" ");
@@ -170,9 +162,9 @@ public class MCMC {
 				System.out.println("number["+t+"] = : "+number[t]+ "  miu["+t+"]"+"^2: "+miu[t].multiply(miu[t]));
 			}
 			sum *= 0.5;
-//			System.out.println("index max cate = "+cateIndexMax);
 			System.out.println(i+"th iteration, sum of miu = : "+sum);
 			maxSum[i] = sum;
+			*/
 			// ~debug
 			for (int j = 0; j < stateNum; j ++){
 				for (int k = 0; k < repeatTimes; k++){
@@ -337,22 +329,17 @@ public class MCMC {
 		minN = 1;
 	}
 
-	
-	// fernador
-//	intern 
-	
-//	james kok,
-	
-
 	private void initialZ() {
 		int m = 0;
 		// z[0-49] = 1 z[50-99] = 2 minN = 3
 		// miu[1] miu[2]
-//		for (int j = 0; j < stateNum; j++){
-//			m = j / 50 + 1;
-//			z[j] = m;
-//			number[m]++;
-//		}
+		/*
+		for (int j = 0; j < stateNum; j++){
+			m = j / 50 + 1;
+			z[j] = m;
+			number[m]++;
+		}
+		*/
 		for (int j = 0; j < stateNum; j++){
 			m = j / 20 + 1;
 			z[j] = m;
@@ -370,17 +357,6 @@ public class MCMC {
 //		int yy = 0;
 //		Vector8 r = new Vector8();
 		for (int j = 0; j < stateNum; j++){
-			
-			
-//			int yd = ((Vector4) data).getLabel(j);
-//			if (yd == 0) yy = 1;
-//			else yy = 0;
-//			tmp = ((Vector4) data).deltaF_d(j);
-//			r.setValue(tmp);
-//			r.multiply(w[2 * j + yy]);
-//			System.out.println(r.equal(wf[j]));
-//			miu[z[j]].add(r);
-			// TODO
 			miu[z[j]].add(wf[j]);
 		}
 	}
@@ -420,7 +396,6 @@ public class MCMC {
 		return cateIndexMax;
 	}
 	public Vector8 getMiu(int l) {
-//		miu[l].print();
 		return miu[l];
 	}
 

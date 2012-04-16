@@ -1,3 +1,8 @@
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.text.NumberFormat;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -12,6 +17,7 @@ import java.util.List;
  */
 public class iSVM {
 	private static final double stoppingCriterion = 10;
+	private static final int maxIteration = 50000;
 	private static final double deltaL = 1.0;
 	private static final int paraSize = Environment.dataCateNum * Environment.trainSize;
 	private static final int sampleNum = 200; // TODO
@@ -40,7 +46,6 @@ public class iSVM {
 	private double u[];
 	private Vector8 miu[];
 	private double V[];
-//	private double Z_w;
 	
 	
 	
@@ -49,12 +54,7 @@ public class iSVM {
 	double p_0[] = new double[sampleNum]; // test
 	
 	
-	
-	
-	
-	
 	private final int R = 15; // repeating times in Algorithm 5
-	private final int Times = 100; // TODO
 
 	
 	
@@ -442,12 +442,13 @@ public class iSVM {
 		// test
 		double logVt[] = new double[sampleNum];
 //		
-		Log lv = new Log("delta.txt");
-		Log log2 = new Log("EFAlg2_1.txt");
-		Log log3 = new Log("sampleFAlg2_1.txt");
+		Log lv = new Log("delta(k="+maxIteration+".txt");
+		Log log2 = new Log("EFAlg2_1(k="+maxIteration+".txt");
+		Log log3 = new Log("sampleFAlg2_1(k="+maxIteration+".txt");
 	
 		// ~test
 		
+		readW(new String("success(k=50000.txt"));
 		
 		// compute f_delta for all d,y
 		Vector8[] f_delta = new Vector8[paraSize];
@@ -464,6 +465,7 @@ public class iSVM {
 			}
 		}
 		
+		
 		do
 		{
 			if (k <= 2){
@@ -473,7 +475,7 @@ public class iSVM {
 					System.out.println("w[2*"+i+"+1] = "+w[2*i+1]);
 				}
 			}
-			if (k > 50000)
+			if (k > maxIteration)
 				break;
 			
 			// a, sample Z, using M-H Alg.
@@ -556,7 +558,6 @@ public class iSVM {
 			}
 			k++;
 			
-//			if (k > 1 ) break;  // test TODO
 			
 		}while (true);
 		lv.close();
@@ -567,6 +568,35 @@ public class iSVM {
 		return;
 	}
 	
+	// read w[] from file
+	private void readW(String filename) {
+		BufferedReader br = null;
+		FileInputStream fis = null;
+		InputStreamReader isr = null;
+		
+		try {
+			fis = new FileInputStream(filename);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		isr = new InputStreamReader(fis);
+		br = new BufferedReader(isr);
+		
+		try {
+			String line = new String();
+			line = br.readLine();
+			for (int i = 0; i < 200; i++){
+				line = br.readLine();
+				String[] s = new String[3];
+				s=line.split(" ");
+				w[i] = Double.parseDouble(s[2]);
+			}
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 	// used in train
 	private void computeF(Data v4,int sample) {
 		for (int i = 0; i < paraSize; i++){
@@ -1147,7 +1177,7 @@ public class iSVM {
 		return Math.sqrt(var) * a + mean;
 	}
 	private void trainEndLog() {
-		Log good = new Log("success.txt");
+		Log good = new Log("success(k="+maxIteration+".txt");
 		good.outln("we success break from while and now record w[]");
 		for (int i = 0; i < paraSize; i ++){
 			good.outln("w["+i+"] = "+w[i]);
