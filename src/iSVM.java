@@ -16,8 +16,8 @@ import java.util.List;
  * use stochastic approximation algorithm to get optimal parameters
  */
 public class iSVM {
-	private static final double stoppingCriterion = 10;
-	private static final int maxIteration = 50000;
+	private static final double stoppingCriterion = 1;
+	private static final int maxIteration = 100000;
 	private static final double deltaL = 1.0;
 	private static final int paraSize = Environment.dataCateNum * Environment.trainSize;
 	private static final int sampleNum = 200; // TODO
