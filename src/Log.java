@@ -73,5 +73,16 @@ public class Log{
 			e.printStackTrace();
 		}
 	}
+	public void out3ln() {
+		newline();
+		newline();
+		newline();
+	}
+	public void out(double[] ds,int l) {
+		for (int i = 0; i < l; i++){
+			out(ds[i]+" ");
+		}
+		newline();
+	}
 
 }

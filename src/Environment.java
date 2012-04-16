@@ -1,22 +1,17 @@
 public class Environment{
 	static final int trainSize = 100;
-	static final int testSize = 9900;
 	static final int dataSetSize = 10000;
+	static final int testSize = dataSetSize - trainSize;
 	static final int dataSetNum = 1;//50;
-	static final int maxComponent = 100;
+	static final int maxComponent = trainSize;
 	static final int dataCateNum = 2;
 	static final double reduce = 30;
-	
+	static final int Times = 20;//00;
 	
 	public static double sampleStandardNormalUnivariate(){ // return a sample from standard normal distribution
 		double r1 = 1,r2 = 1;
-		double tmp = r1*r1 + r2*r2;
-		while (tmp > 1){
-			r1 = 2 * Math.random() - 1;
-			r2 = 2 * Math.random() - 1;
-			tmp = r1*r1 + r2*r2;
-		}
-		return r1 * Math.sqrt(-2 * Math.log(Math.abs(r1)) / tmp);
+		r1 = Math.random();r2 = Math.random();
+		return Math.sqrt(-2 * Math.log(r1)) * Math.sin(2 * Math.PI * r2);
 	}	
 	
 	public static double sampleNormalUnivariate(double mean, double var ){ // variance = var 

@@ -14,9 +14,14 @@ public class main{
 //		Environment c = new Environment();
 		Vector4 v4 = new Vector4();
 		iSVM lk = new iSVM();
+//		double u1 = 2;
+//		double theta = - 1 * Math.sin(u1 * u1 * u1 + 1.2) -u1 * Math.cos(1 * u1 + 0.7) - 1 * u1 + 2;
+//		double p = 1 / (1 + Math.exp(-theta));
+//		System.out.println("prob = "+p);
 		
 		for (int i = 0; i < Environment.dataSetNum; i++){
-			v4.newData();
+//			v4.newData();
+			v4.oldData("jiayou!");
 			lk.go(v4,Environment.dataSetSize,Environment.trainSize);
 			lk.evaluation();
 //			v4.testSample(1000000,1,0.0001);
