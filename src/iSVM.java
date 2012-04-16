@@ -438,18 +438,19 @@ public class iSVM {
 	 * Metropolis Sampling, sample Z
 	 */
 	private void trainAlg2_1(Data v4, int setSize, int trainSize) {
+		
+		readW(new String("res/paraW(delta"+10.0+"k="+50000+").txt"));
+		
 		int k = 1; // k_th iteration
 		// test
 		double logVt[] = new double[sampleNum];
 //		
-		Log lv = new Log("delta(k="+maxIteration+".txt");
-		Log log2 = new Log("EFAlg2_1(k="+maxIteration+".txt");
-		Log log3 = new Log("sampleFAlg2_1(k="+maxIteration+".txt");
+		Log lv = new Log("res/delta(delta"+stoppingCriterion+"k"+maxIteration+").txt");
+		Log log2 = new Log("res/EFAlg2_1(delta"+stoppingCriterion+"k"+maxIteration+").txt");
+		Log log3 = new Log("res/sampleFAlg2_1(delta"+stoppingCriterion+"k"+maxIteration+").txt");
 	
 		// ~test
-		
-		readW(new String("success(k=50000.txt"));
-		
+
 		// compute f_delta for all d,y
 		Vector8[] f_delta = new Vector8[paraSize];
 		double [] tmpp = new double[8];
@@ -482,9 +483,6 @@ public class iSVM {
 			//    compute mF[][]
 			MCMC a = new MCMC(v4, trainSize, w, alphaDP);
 			a.go();
-//			for (int i = 0; i < 0.2 * paraSize; i++){
-//				System.out.println("w["+i+"] = "+w[i]);
-//			}
 			
 			log3.outln("k = "+k+"; mF[0][j] ---");
 			for (int i = 0; i < sampleNum; i++){
@@ -545,17 +543,17 @@ public class iSVM {
 				if (w[i] > C)					w[i] = C;
 				if (w[i] < 0)					w[i] = 0;
 			}
-			// see w
-			if (k == 1){
-				Log changeW = new Log("updatedW.txt");
-				for (int i = 0; i < trainSize; i++){
-					int b = ((Vector4) v4).getLabel(i);
-					if (b == 0) b=1;
-					else b = 0;
-					changeW.outln("w[2*"+i+"+"+b+"] = " + w[2*i+b]);
-				}
-				changeW.close();
-			}
+//			// see w
+//			if (k == 1){
+//				Log changeW = new Log("updatedW.txt");
+//				for (int i = 0; i < trainSize; i++){
+//					int b = ((Vector4) v4).getLabel(i);
+//					if (b == 0) b=1;
+//					else b = 0;
+//					changeW.outln("w[2*"+i+"+"+b+"] = " + w[2*i+b]);
+//				}
+//				changeW.close();
+//			}
 			k++;
 			
 			
@@ -1177,8 +1175,8 @@ public class iSVM {
 		return Math.sqrt(var) * a + mean;
 	}
 	private void trainEndLog() {
-		Log good = new Log("success(k="+maxIteration+".txt");
-		good.outln("we success break from while and now record w[]");
+		Log good = new Log("res/paraW(delta"+stoppingCriterion+"k="+maxIteration+").txt");
+		good.outln("we success break from \"while\" and now record w[]");
 		for (int i = 0; i < paraSize; i ++){
 			good.outln("w["+i+"] = "+w[i]);
 		}

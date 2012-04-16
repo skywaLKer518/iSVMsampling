@@ -1,5 +1,5 @@
-accept number: 6223
-reject number: 638
+accept number: 5674
+reject number: 556
 sum : 0.0
 sum : 0.0
 sum : 0.0

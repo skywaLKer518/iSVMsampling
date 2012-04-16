@@ -110,6 +110,9 @@ public class MCMC {
 	}
 	public void test(){
 		System.out.println("this is in test func");
+		Log tst = new Log("res/hahah.txt");
+		tst.outln("djfaldfjasdfj");
+		tst.close();
 		System.out.println("this is the end in test func");
 	}
 	
