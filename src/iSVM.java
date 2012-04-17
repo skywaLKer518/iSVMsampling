@@ -16,42 +16,35 @@ import java.util.List;
  * use stochastic approximation algorithm to get optimal parameters
  */
 public class iSVM {
-	private static final double stoppingCriterion = 1;
-	private static final int maxIteration = 100000;
+	private static final double stoppingCriterion = 300;
+	private static final int maxIteration = 2000;
 	private static final double deltaL = 1.0;
 	private static final int paraSize = Environment.dataCateNum * Environment.trainSize;
 	private static final int sampleNum = 200; // TODO
 	private static final double alphaDP = 0.5;
 	private static final double betaDP = 1.0;
 	private static final double C = 3.0;
+	private static final int modelNum = 100;
 	private final int etaLength1 = 8; // for data setting 1
 	private final int gammaLength1 = 4;
-	private double partition = 0;
 	private double logPartition = 0;
 	private double eta[][];
 	private double gamma[][];
 	private int z[];	
 	private double w[];					// w_d1_y1 w_d1_y2 ... w_d2_y1 w_d2_y2 ...
-	private double F[];                 // F_d1_y1 F_d1_y2 ... F_d2_y1 F_d2_y2 ...
 	private double EF[];
 	private double G[];
 //	private double f[];
 	private double l[];
 	private double mF[][];
-	private double logPrior[];
-	private double logPost[];
 	private double logV[];
 	private double logP_0minusLogQ[];
 	private double logVmax;
 	private double u[];
 	private Vector8 miu[];
-	private double V[];
 	
 	
-	
-	
-	
-	double p_0[] = new double[sampleNum]; // test
+	double pCompenent[] = new double[Environment.maxComponent]; // in test()
 	
 	
 	private final int R = 15; // repeating times in Algorithm 5
@@ -83,13 +76,9 @@ public class iSVM {
 	
 	iSVM(){
 		w = new double[paraSize];
-		F = new double[paraSize];
 		EF = new double[paraSize];
 		G = new double[paraSize];
 		l = new double[paraSize];
-		logPrior = new double[sampleNum];
-		logPost  = new double[sampleNum];
-		V = new double[sampleNum];
 		u = new double[sampleNum];
 		logV = new double[sampleNum];
 		logP_0minusLogQ = new double[sampleNum];
@@ -124,10 +113,10 @@ public class iSVM {
 //		init(v4);
 //		trainAlg1_2(v4,setSize,trainSize);
 		init(v4);
-		trainAlg2_1(v4,setSize,trainSize);
-		
-		//test(v4,setSize,trainSize); here this is in use.
-		
+//		trainAlg2_1(v4,setSize,trainSize);
+//		for (int k = 0; k < 200; k++)
+			test(v4,setSize,trainSize); 	
+//		System.out.println("score is "+score+" out of "+200 * 100+" accu = "+ score * 1.0 / (1.0 * 200 * 100));
 //		test2(v4,setSize,trainSize);
 	}
 
@@ -439,7 +428,7 @@ public class iSVM {
 	 */
 	private void trainAlg2_1(Data v4, int setSize, int trainSize) {
 		
-		readW(new String("res/paraW(delta"+10.0+"k="+50000+").txt"));
+//		readW(new String("res/paraW(delta"+10.0+"k="+50000+").txt"));
 		
 		int k = 1; // k_th iteration
 		// test
@@ -742,57 +731,100 @@ public class iSVM {
 	 * regard p(z = i) = number[i] / trainSize;
 	 */
 	private void test(Data v4, int setSize, int trainSize) {
-		double p[] = new double[sampleNum];
-		double sum = 0;
-		for (int j = 0; j < sampleNum; j++){
-			p_0[j] = getP_0(j);			
-		} 
-		for (int i = 0; i < sampleNum; i ++){
+		double pComponent[][] = new double[modelNum][Environment.maxComponent]; // record component weight for each, and for each model
+		Vector8 etaPost[][] = new Vector8[modelNum][Environment.maxComponent]; 
+//		Vector8[] f_dis = new Vector8[trainSize];
+		Vector8 f_dis = new Vector8();
+		// read w -- training result
+		readW(new String("res/paraW(delta1.0k=100000).txt"));
+		// construct markov chain
+		MCMC t = new MCMC(v4, trainSize, w, alphaDP);
+		t.go();
+		// sample models
+		int [] componentNum = new int[modelNum];
+		int [] numberData = new int[Environment.maxComponent];// in each component
+		for (int i = 0; i < modelNum; i++){
+			for (int j = 0; j < 30; j++){
+				t.oneSample();
+			}
+//			t.go();
+			componentNum[i] = t.getCateNumer();  // Note: from 1 to componentNum[1], not componentNum[] - 1
+			numberData = t.getNumberEachCate();
+			pComponent[i] = new double[componentNum[i]+1];
+			etaPost[i] = new Vector8[componentNum[i]+1];
+			for (int j = 1; j < componentNum[i]+1; j ++){
+				pComponent[i][j] = (numberData[j] * 1.0) / (trainSize*1.0);
+				etaPost[i][j] = new Vector8();
+				System.out.print(pComponent[i][j] + " ");
+//				System.out.print(numberData[j] + " ");
+			}
+			System.out.println();
 			
-//			p[i] = V[i] / Z_w * p_0[i];
-			sum += p[i];
+			for (int j = 1; j < componentNum[i]+1; j ++){
+				if (pComponent[i][j] == 0) 
+					etaPost[i][j].reset();
+				else
+					etaPost[i][j] = t.getMiu(j);
+			}
 		}
-		double disF[] = new double[Environment.dataCateNum];
 		
-		score = 0;
-		for (int i = trainSize; i < Environment.dataSetSize; i++){
-			disF[0] = 0; disF[1] = 0;
-			for (int j = 0; j < Environment.dataCateNum; j++){
-				for (int k = 0; k < sampleNum; k ++){
-					disF[j] += ((Vector4) v4).computeF(eta[z[k]],i,j) * p[k];	
+		
+		// predict
+		for (int i = 0; i < trainSize; i++){
+			f_dis.setValue(((Vector4) v4).deltaF_d(i, 0));
+			int predic = -1;
+			double aver = 0;
+			for (int j = 0; j < modelNum; j++){
+				for (int k = 1; k <= componentNum[j]; k++){
+					if (pComponent[j][k] == 0) continue;
+					aver += pComponent[j][k] * etaPost[j][k].multiply(f_dis);
 				}
+//				System.out.println("\nmodelNum = "+modelNum);
+//				for (int k = 1; k <= componentNum[j]; k++){
+//					System.out.println(pComponent[j][k] +" " + etaPost[j][k].multiply(f_dis));
+//				}
+				
 			}
-			if (disF[0] > disF[1])
-				prediction[i] = 0;
-			else
-				prediction[i] = 1;
-			score += ((Vector4) v4).labelTest(prediction[i], i);
+			aver = aver / (modelNum * 1.0);
+			if (aver < 0) predic = 1;
+			else predic = 0;
+			int yy = ((Vector4) v4).getLabel(i);
+			System.out.println("Average score for i = "+i+"  with label "+yy +" : " +aver+"   "+(yy == predic));
+			
+			if (predic == yy)
+				score ++;
 		}
+		System.out.println("score is "+score);
 		
-		/*
-		double disF0,disF1;score = 0;
-		for (int i = trainSize; i < Environment.dataSetSize; i++){
-			disF0 = 0;
-			disF1 = 0;
-			for (int j = 0; j <= cateIndexMax; j++){
-				if (number[j] <= 0)
-					continue;
-				disF0 += ((Vector4) v4).disFunc(eta[j],i,0) * number[j] / (1.0 * trainSize);
-				disF1 += ((Vector4) v4).disFunc(eta[j],i,1) * number[j] / (1.0 * trainSize);
-			}
-			if (disF0 > disF1)	prediction[i] = 0;
-			else prediction[i] = 1;
-			
-			//test TODO
-			if (prediction[i] == 0) predic0++;
-			else predic1++;
-			if (((Vector4) v4).getLable(i) == 0) data0++;
-			else data1++;
-			
-			score += ((Vector4) v4).lableTest(prediction[i], i);
-			
-		}
-		*/
+		
+		
+//		
+//		double p[] = new double[sampleNum];
+//		double sum = 0;
+//		for (int j = 0; j < sampleNum; j++){
+//		} 
+//		for (int i = 0; i < sampleNum; i ++){
+//			
+////			p[i] = V[i] / Z_w * p_0[i];
+//			sum += p[i];
+//		}
+//		double disF[] = new double[Environment.dataCateNum];
+//		
+//		score = 0;
+//		for (int i = trainSize; i < Environment.dataSetSize; i++){
+//			disF[0] = 0; disF[1] = 0;
+//			for (int j = 0; j < Environment.dataCateNum; j++){
+//				for (int k = 0; k < sampleNum; k ++){
+//					disF[j] += ((Vector4) v4).computeF(eta[z[k]],i,j) * p[k];	
+//				}
+//			}
+//			if (disF[0] > disF[1])
+//				prediction[i] = 0;
+//			else
+//				prediction[i] = 1;
+//			score += ((Vector4) v4).labelTest(prediction[i], i);
+//		}
+		
 	}
 	
 	private double getP_0(int j) {

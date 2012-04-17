@@ -10,14 +10,14 @@ import java.util.List;
 
 public class MCMC {
 	private static final int repeatTimes = 5;
+	private int stateNum = Environment.trainSize;
 	private int[] z = new int[Environment.trainSize];
-	private int number[] = new int[Environment.trainSize]; // record n_-i,c.  number[MaxCateNumber]
+	private int number[] = new int[stateNum]; // record n_-i,c.  number[MaxCateNumber]
 	private int cateNumber = 0; // number of category
 	private int cateIndexMax = 0;
 	private int observed = 0;
 	private int minN = 1;
 	private List<Integer> cateAlive = new LinkedList<Integer>(); // store all cate which is associated with at least one data sample
-	private int stateNum = Environment.trainSize;
 	private double alpha = 1;
 	private double[] w = new double[Environment.trainSize * Environment.dataCateNum];
 	Vector8[] miu;
@@ -110,9 +110,6 @@ public class MCMC {
 	}
 	public void test(){
 		System.out.println("this is in test func");
-		Log tst = new Log("res/hahah.txt");
-		tst.outln("djfaldfjasdfj");
-		tst.close();
 		System.out.println("this is the end in test func");
 	}
 	
@@ -152,22 +149,23 @@ public class MCMC {
 		initialZ();
 		for (int i = 0; i <Environment.Times; i++ ){
 			// debug
-			/*
-			System.out.println("\nCurrent state is :");
-			for (int j = 0; j < stateNum; j ++){
-				System.out.print(z[j]+" ");
-				if (j % 10 == 9)
-					System.out.println();
+			boolean debug = false; // TODO
+			if (debug){
+				System.out.println("\nCurrent state is :");
+				for (int j = 0; j < stateNum; j ++){
+					System.out.print(z[j]+" ");
+					if (j % 10 == 9)
+						System.out.println();
+				}
+				double sum = 0;
+				for (int t = 1; t <= cateIndexMax; t++){
+					sum += miu[t].multiply(miu[t]);
+					System.out.println("number["+t+"] = : "+number[t]+ "  miu["+t+"]"+"^2: "+miu[t].multiply(miu[t]));
+				}
+				sum *= 0.5;
+				System.out.println(i+"th iteration, sum of miu = : "+sum);
+				maxSum[i] = sum;
 			}
-			double sum = 0;
-			for (int t = 1; t <= cateIndexMax; t++){
-				sum += miu[t].multiply(miu[t]);
-				System.out.println("number["+t+"] = : "+number[t]+ "  miu["+t+"]"+"^2: "+miu[t].multiply(miu[t]));
-			}
-			sum *= 0.5;
-			System.out.println(i+"th iteration, sum of miu = : "+sum);
-			maxSum[i] = sum;
-			*/
 			// ~debug
 			for (int j = 0; j < stateNum; j ++){
 				for (int k = 0; k < repeatTimes; k++){
@@ -344,11 +342,15 @@ public class MCMC {
 		}
 		*/
 		for (int j = 0; j < stateNum; j++){
+			number[j] = 0;
+		}
+		for (int j = 0; j < stateNum; j++){
 			m = j / 20 + 1;
 			z[j] = m;
 			number[m]++;
 		}
 		minN = 6;
+		cateAlive.clear();
 		cateAlive.add(1);cateAlive.add(2);
 		cateAlive.add(3);cateAlive.add(4);cateAlive.add(5);
 		cateIndexMax = 5;
@@ -400,6 +402,13 @@ public class MCMC {
 	}
 	public Vector8 getMiu(int l) {
 		return miu[l];
+	}
+	public int[] getNumberEachCate() {
+		int[] r = new int[cateIndexMax+1];
+		for (int i = 1; i <= cateIndexMax; i++){
+			r[i] = number[i];
+		}
+		return r;
 	}
 
 }

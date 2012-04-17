@@ -6,7 +6,7 @@ public class Environment{
 	static final int maxComponent = trainSize;
 	static final int dataCateNum = 2;
 	static final double reduce = 30;
-	static final int Times = 20;//00;
+	static final int Times = 200;//00;
 	
 	public static double sampleStandardNormalUnivariate(){ // return a sample from standard normal distribution
 		double r1 = 1,r2 = 1;

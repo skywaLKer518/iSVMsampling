@@ -132,6 +132,20 @@ class Vector4 extends Data{
 		return x;
 	}
 	
+	double[] deltaF_d(int d,int label){
+		double []x = new double[8];
+		x[0] = v1[d]; x[4] = -v1[d];
+		x[1] = v2[d]; x[5] = -v2[d];
+		x[2] = v3[d]; x[6] = -v3[d];
+		x[3] = v4[d]; x[7] = -v4[d];
+		if (label == 1){
+			for (int i = 0; i < 8; i ++){
+				x[i] = -x[i];
+			}
+		}
+		return x;
+	}
+	
 	void shuffle(){
 		int ix1,ix2;
 		double t1,t2,t3,t4;
