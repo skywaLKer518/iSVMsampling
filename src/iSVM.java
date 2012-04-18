@@ -16,8 +16,8 @@ import java.util.List;
  * use stochastic approximation algorithm to get optimal parameters
  */
 public class iSVM {
-	private static final double stoppingCriterion = 300;
-	private static final int maxIteration = 2000;
+	private static final double stoppingCriterion = 10;
+	private static final int maxIteration = 1;
 	private static final double deltaL = 1.0;
 	private static final int paraSize = Environment.dataCateNum * Environment.trainSize;
 	private static final int sampleNum = 200; // TODO
@@ -114,8 +114,9 @@ public class iSVM {
 //		trainAlg1_2(v4,setSize,trainSize);
 		init(v4);
 //		trainAlg2_1(v4,setSize,trainSize);
+		trainAlg2_2(v4,setSize,trainSize);
 //		for (int k = 0; k < 200; k++)
-			test(v4,setSize,trainSize); 	
+//			test(v4,setSize,trainSize); 	
 //		System.out.println("score is "+score+" out of "+200 * 100+" accu = "+ score * 1.0 / (1.0 * 200 * 100));
 //		test2(v4,setSize,trainSize);
 	}
@@ -428,7 +429,7 @@ public class iSVM {
 	 */
 	private void trainAlg2_1(Data v4, int setSize, int trainSize) {
 		
-//		readW(new String("res/paraW(delta"+10.0+"k="+50000+").txt"));
+//		readW(new String("res/paraW(delta300.0k=2000).txt"));
 		
 		int k = 1; // k_th iteration
 		// test
@@ -458,13 +459,13 @@ public class iSVM {
 		
 		do
 		{
-			if (k <= 2){
-				for (int i = 0; i < 20; i++){
-					((Vector4) v4).printV(i);
-					System.out.println("w[2*"+i+"] = "+w[2*i]);
-					System.out.println("w[2*"+i+"+1] = "+w[2*i+1]);
-				}
-			}
+//			if (k <= 2){
+//				for (int i = 0; i < 20; i++){
+//					((Vector4) v4).printV(i);
+//					System.out.println("w[2*"+i+"] = "+w[2*i]);
+//					System.out.println("w[2*"+i+"+1] = "+w[2*i+1]);
+//				}
+//			}
 			if (k > maxIteration)
 				break;
 			
@@ -555,6 +556,130 @@ public class iSVM {
 		return;
 	}
 	
+	
+	/*
+	 * Stochastic Approximation to optimize w
+	 * Gibbs Sampling, sample Z
+	 */
+	private void trainAlg2_2(Data v4, int setSize, int trainSize) {
+//		readW(new String("res/paraW(delta10.0k=5000Times200).txt"));
+		
+		int k = 1; // k_th iteration
+		// test
+		double logVt[] = new double[sampleNum];
+//		
+		Log lv = new Log("res/deltaAlg2_2(delta"+stoppingCriterion+"k"+maxIteration+"Times"+Environment.sampleTimes+").txt");
+		Log log2 = new Log("res/EFAlg2_2(delta"+stoppingCriterion+"k"+maxIteration+"Times"+Environment.sampleTimes+").txt");
+		Log log3 = new Log("res/sampleFAlg2_2(delta"+stoppingCriterion+"k"+maxIteration+"Times"+Environment.sampleTimes+").txt");
+		// ~test
+
+		// compute f_delta for all d,y
+		Vector8[] f_delta = new Vector8[paraSize];
+		double [] tmpp = new double[8];
+		for (int i = 0; i < paraSize; i++){
+			f_delta[i] = new Vector8();
+			int dd = i / 2;
+			int yy = i % 2;
+			int y = ((Vector4) v4).getLabel(dd);
+			if ( y == yy ) {}// do nothing
+			else{
+				tmpp = ((Vector4) v4).deltaF_d(dd);
+				f_delta[i].setValue(tmpp);
+			}
+		}
+		
+		
+		do
+		{
+			if (k > maxIteration)
+				break;
+			
+			// a, sample Z, using M-H Alg.
+			//    compute mF[][]
+			MCMC a = new MCMC(v4, trainSize, w, alphaDP);
+			a.go2();
+			
+			log3.outln("k = "+k+"; mF[0][j] ---");
+			for (int i = 0; i < sampleNum; i++){
+				a.oneSample2();
+				z = a.getZ();
+				cateIndexMax = a.getCateNumer();
+				for (int l = 1; l <= cateIndexMax; l ++){
+//					miu[l].reset();
+					miu[l] = a.getMiu(l);
+				}
+				for (int j = 0; j < paraSize; j++){
+					int dd = j/2;
+					mF[j][i] = miu[z[dd]].multiply(f_delta[j]);
+				}
+				log3.outln(mF[0][i]);
+			}
+			
+			// b, compute EF
+			for (int j = 0; j < paraSize; j++){
+				EF[j] = 0;
+				for (int i = 0; i < sampleNum; i++){
+					EF[j] += mF[j][i];
+				}
+				EF[j] /= 1.0 * sampleNum;
+			}
+			// c, update w
+			double delta = 0;
+			for (int i = 0; i < paraSize; i++){
+				G[i] = EF[i] - l[i];
+				delta += G[i] * G[i];
+			}
+			// test all the way
+			System.out.println("k = "+k+"; ");
+			System.out.println("delta  = " + delta);
+			if ( k % 100 == 1)
+				lv.outln("k = "+k);
+			NumberFormat num = NumberFormat.getInstance();
+			num.setMaximumFractionDigits(0);
+			lv.outln("delta  = " + num.format(delta));
+			if ( k % 100 == 0)
+				lv.outln("\n\n");
+			
+			log2.outln("k = "+k);
+			for (int i = 0; i < paraSize; i++){
+				log2.outln("EF["+i+"] = " + EF[i]+ " l["+i+"] = "+l[i]);
+			}
+//			log2.outln("u[1-sampleNum] = ");
+//			for (int q = 0; q < sampleNum; q++){
+//				log2.out(u[q]+" ");
+//			}
+			log2.out3ln();
+			//
+			if (delta < stoppingCriterion)
+				break;
+			double m = (1 / 500.0 / Math.pow((1.0 * k),2.0 / 3.0));
+			for (int i = 0; i < paraSize; i++){
+				w[i] -= m * G[i];
+				if (w[i] > C)					w[i] = C;
+				if (w[i] < 0)					w[i] = 0;
+			}
+//			// see w
+//			if (k == 1){
+//				Log changeW = new Log("updatedW.txt");
+//				for (int i = 0; i < trainSize; i++){
+//					int b = ((Vector4) v4).getLabel(i);
+//					if (b == 0) b=1;
+//					else b = 0;
+//					changeW.outln("w[2*"+i+"+"+b+"] = " + w[2*i+b]);
+//				}
+//				changeW.close();
+//			}
+			k++;
+			
+			
+		}while (true);
+		lv.close();
+		log2.close();
+		log3.close();
+		trainEndLog();
+		
+		return;
+	}
 	// read w[] from file
 	private void readW(String filename) {
 		BufferedReader br = null;
@@ -736,17 +861,15 @@ public class iSVM {
 //		Vector8[] f_dis = new Vector8[trainSize];
 		Vector8 f_dis = new Vector8();
 		// read w -- training result
-		readW(new String("res/paraW(delta1.0k=100000).txt"));
+		readW(new String("res/paraW(delta10.0k=5000Times200).txt"));
 		// construct markov chain
 		MCMC t = new MCMC(v4, trainSize, w, alphaDP);
-		t.go();
+		t.go2();
 		// sample models
 		int [] componentNum = new int[modelNum];
 		int [] numberData = new int[Environment.maxComponent];// in each component
 		for (int i = 0; i < modelNum; i++){
-			for (int j = 0; j < 30; j++){
-				t.oneSample();
-			}
+			t.oneSample2();
 //			t.go();
 			componentNum[i] = t.getCateNumer();  // Note: from 1 to componentNum[1], not componentNum[] - 1
 			numberData = t.getNumberEachCate();
@@ -1207,7 +1330,7 @@ public class iSVM {
 		return Math.sqrt(var) * a + mean;
 	}
 	private void trainEndLog() {
-		Log good = new Log("res/paraW(delta"+stoppingCriterion+"k="+maxIteration+").txt");
+		Log good = new Log("res/paraW(delta"+stoppingCriterion+"k="+maxIteration+"Times"+Environment.sampleTimes+").txt");
 		good.outln("we success break from \"while\" and now record w[]");
 		for (int i = 0; i < paraSize; i ++){
 			good.outln("w["+i+"] = "+w[i]);

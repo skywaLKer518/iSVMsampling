@@ -103,4 +103,11 @@ public class Vector8{
 		if (a == 8) return true;
 		else return false;
 	}
+	public Vector8 minus(Vector8 v8) {
+		Vector8 t = new Vector8();
+		for (int i = 0; i < 8; i++){
+			t.d[i] = this.d[i] - v8.d[i];
+		}
+		return t;
+	}
 }
