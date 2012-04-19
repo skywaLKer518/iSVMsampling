@@ -10,7 +10,7 @@ import java.util.List;
 
 public class MCMC {
 	private static final int repeatTimes = 5;
-	private static final int Infinity = -200;
+	private static final int Infinity = 200;
 	private int stateNum = Environment.trainSize;
 	private int sampleTimes = Environment.sampleTimes;
 	private int[] z = new int[Environment.trainSize];
@@ -28,6 +28,7 @@ public class MCMC {
 	private double[] maxSum = new double[sampleTimes];
 	private int rej = 0;
 	private int acc = 0;
+	private double sigmaDotProduct = 0;
 	
 	public MCMC(Data v4, int trainSize, double[] w, double alpha) {
 		this.data = v4;
@@ -160,23 +161,56 @@ public class MCMC {
 				else max = cateIndexMax;
 				
 				for (int k = 1; k <= max; k++){
+//					if (k == z[j]){
+//						logP_0 = Math.log((number[k] - 1) * 1.0 / ((observed * 1.0) + alpha - 1));
+//						logP[k] = sigma+logP_0;
+//					}
+//					else if (number[k] > 0){
+//						logP_0 = Math.log((number[k]) * 1.0 / ((observed * 1.0) + alpha - 1));
+//						deltaSigma = (miu[k].minus(miu[z[j]])).multiply(wf[j]) + wf[j].multiply(wf[j]);
+//						logP[k] = sigma + deltaSigma + logP_0;
+//					}
+//					else if (k == minN){
+//						logP_0 = Math.log( alpha / ((observed * 1.0) + alpha - 1));
+//						deltaSigma = (miu[k].minus(miu[z[j]])).multiply(wf[j]) + wf[j].multiply(wf[j]);
+//						logP[k] = sigma + deltaSigma + logP_0;
+//					}
+//					else{ // number[k] = 0, k != minN it is a useless component index, which should be deleted
+//						logP[k] = - Infinity;
+//					}
+					
 					if (k == z[j]){
-						logP_0 = Math.log((number[k] - 1) * 1.0 / ((observed * 1.0) + alpha - 1));
-						logP[k] = sigma+logP_0;
+						if (number[k] == 1){ // ( k == minN)impossible
+							logP[k] = - Infinity;
+						}
+						else if (number[k] > 1){
+							logP[k] = Math.log((number[k] - 1) * 1.0 / ((observed * 1.0) + alpha - 1)) + sigma;
+						}
+						else{
+							System.out.println("Error in go2()");
+							System.exit(-1);
+						}
 					}
-					else if (number[k] > 0){
-						logP_0 = Math.log((number[k]) * 1.0 / ((observed * 1.0) + alpha - 1));
-						deltaSigma = (miu[k].minus(miu[z[j]])).multiply(wf[j]) + wf[j].multiply(wf[j]);
-						logP[k] = sigma + deltaSigma + logP_0;
+					else{
+						if (number[k] >= 1){
+							logP[k] = Math.log((number[k]) * 1.0 / ((observed * 1.0) + alpha - 1)) + sigma + 
+									wf[j].multiply(wf[j]) + (miu[k].minus(miu[z[j]]).multiply(wf[j]));
+						}
+						else if (number[k] == 0){
+							if ( k == minN){
+								logP[k] = Math.log(alpha / ((observed * 1.0) + alpha - 1)) + sigma +
+									wf[j].multiply(wf[j]) + (miu[k].minus(miu[z[j]]).multiply(wf[j]));
+							}
+							else logP[k] = - Infinity;
+						}
+						else{
+							System.out.println("Error in go2()");
+							System.exit(-1);
+						}
 					}
-					else if (k == minN){
-						logP_0 = Math.log( alpha / ((observed * 1.0) + alpha - 1));
-						deltaSigma = (miu[k].minus(miu[z[j]])).multiply(wf[j]) + wf[j].multiply(wf[j]);
-						logP[k] = sigma + deltaSigma + logP_0;
-					}
-					else{ // number[k] = 0, k != minN it is a useless component index, which should be deleted
-						logP[k] = - Infinity;
-					}
+					
+					
+					
 				}
 				logPmax = -1;
 				for (int k = 1; k <= max; k++){
@@ -332,7 +366,7 @@ public class MCMC {
 		for (int i = 0; i < sampleTimes; i++){
 			
 			// debug
-			boolean debug = true; // TODO
+			boolean debug = false; // TODO
 			double sum = 0;
 			if (debug) System.out.println("\nCurrent state is :");
 			sample.outln("\nCurrent state is :");
@@ -373,23 +407,56 @@ public class MCMC {
 				else max = cateIndexMax;
 				
 				for (int k = 1; k <= max; k++){
+					
+//					if (k == z[j]){
+//						logP_0 = Math.log((number[k] - 1) * 1.0 / ((observed * 1.0) + alpha - 1));
+//						logP[k] = sigma+logP_0;
+//					}
+//					else if (number[k] > 0){
+//						logP_0 = Math.log((number[k]) * 1.0 / ((observed * 1.0) + alpha - 1));
+//						deltaSigma = (miu[k].minus(miu[z[j]])).multiply(wf[j]) + wf[j].multiply(wf[j]);
+//						logP[k] = sigma + deltaSigma + logP_0;
+//					}
+//					else if (k == minN){
+//						logP_0 = Math.log( alpha / ((observed * 1.0) + alpha - 1));
+//						deltaSigma = (miu[k].minus(miu[z[j]])).multiply(wf[j]) + wf[j].multiply(wf[j]);
+//						logP[k] = sigma + deltaSigma + logP_0;
+//					}
+//					else{ // number[k] = 0, k != minN it is a useless component index, which should be deleted
+//						logP[k] = - Infinity;
+//					}
+					
 					if (k == z[j]){
-						logP_0 = Math.log((number[k] - 1) * 1.0 / ((observed * 1.0) + alpha - 1));
-						logP[k] = sigma+logP_0;
+						if (number[k] == 1){ // ( k == minN)impossible
+							logP[k] = - Infinity;
+						}
+						else if (number[k] > 1){
+							logP[k] = Math.log((number[k] - 1) * 1.0 / ((observed * 1.0) + alpha - 1)) + sigma;
+						}
+						else{
+							System.out.println("Error in go2()");
+							System.exit(-1);
+						}
 					}
-					else if (number[k] > 0){
-						logP_0 = Math.log((number[k]) * 1.0 / ((observed * 1.0) + alpha - 1));
-						deltaSigma = (miu[k].minus(miu[z[j]])).multiply(wf[j]) + wf[j].multiply(wf[j]);
-						logP[k] = sigma + deltaSigma + logP_0;
+					else{
+						if (number[k] >= 1){
+							logP[k] = Math.log((number[k]) * 1.0 / ((observed * 1.0) + alpha - 1)) + sigma + 
+									wf[j].multiply(wf[j]) + (miu[k].minus(miu[z[j]]).multiply(wf[j]));
+						}
+						else if (number[k] == 0){
+							if ( k == minN){
+								logP[k] = Math.log(alpha / ((observed * 1.0) + alpha - 1)) + sigma +
+									wf[j].multiply(wf[j]) + (miu[k].minus(miu[z[j]]).multiply(wf[j]));
+							}
+							else logP[k] = - Infinity;
+						}
+						else{
+							System.out.println("Error in go2()");
+							System.exit(-1);
+						}
 					}
-					else if (k == minN){
-						logP_0 = Math.log( alpha / ((observed * 1.0) + alpha - 1));
-						deltaSigma = (miu[k].minus(miu[z[j]])).multiply(wf[j]) + wf[j].multiply(wf[j]);
-						logP[k] = sigma + deltaSigma + logP_0;
-					}
-					else{ // number[k] = 0, k != minN it is a useless component index, which should be deleted
-						logP[k] = - Infinity;
-					}
+					
+					
 				}
 				logPmax = -1;
 				for (int k = 1; k <= max; k++){
@@ -402,9 +469,12 @@ public class MCMC {
 					sumTmp += Math.exp(logP[k] - logPmax);
 				}
 				logZ += Math.log(sumTmp);
+				double test = 0;
 				for (int k = 1; k <= max; k++){
 					p[k] = Math.exp(logP[k] - logZ);
+					test += p[k];
 				}
+				System.out.println("1 = " +test);
 				
 				// test
 				condition.outln("for "+j);
@@ -605,6 +675,9 @@ public class MCMC {
 //		int yy = 0;
 //		Vector8 r = new Vector8();
 		for (int j = 0; j < stateNum; j++){
+			miu[j].reset();
+		}
+		for (int j = 0; j < stateNum; j++){
 			miu[z[j]].add(wf[j]);
 		}
 	}
@@ -633,6 +706,47 @@ public class MCMC {
 			}
 		}
 	}
+	// without shuffle
+	private void initialZ2() {
+		int m = 0;
+		// z[0-49] = 1 z[50-99] = 2 minN = 3
+		// miu[1] miu[2]
+		/*
+		for (int j = 0; j < stateNum; j++){
+			m = j / 50 + 1;
+			z[j] = m;
+			number[m]++;
+		}
+		*/
+		for (int j = 0; j < stateNum; j++){
+			number[j] = 0;
+		}
+		for (int j = 0; j < stateNum; j++){
+			m = j / 20 + 1;
+			z[j] = m;
+			number[m]++;
+		}
+		minN = 6;
+		cateAlive.clear();
+		cateAlive.add(1);cateAlive.add(2);
+		cateAlive.add(3);cateAlive.add(4);cateAlive.add(5);
+		cateIndexMax = 5;
+		cateNumber = 5;
+		observed = 100;
+		
+//		double[] tmp = new double[8];
+//		int yy = 0;
+//		Vector8 r = new Vector8();
+		for (int j = 0; j < stateNum; j++){
+			miu[j].reset();
+		}
+		for (int j = 0; j < stateNum; j++){
+			miu[z[j]].add(wf[j]);
+		}
+	}
+	
+	
+
 	public int[] getZ() {
 		int [] a = new int[stateNum];
 		for (int i = 0; i < stateNum; i++){
@@ -652,6 +766,36 @@ public class MCMC {
 			r[i] = number[i];
 		}
 		return r;
+	}
+	public void importanceS() {
+		initialZ2();
+		sigmaDotProduct = 0;
+		for (int t = 1; t <= cateIndexMax; t++){
+			sigmaDotProduct += miu[t].multiply(miu[t]);
+		}
+		sigmaDotProduct *= 0.5;
+		int c = 0;
+		for (int i = 0; i < 500; i++){
+			for (int j = 0; j < stateNum; j++){
+				// sampleCandidate(j);
+				c = drawZprior(j);
+				if (c == z[j]) continue;
+				// compute a*
+				miu[z[j]].sub(wf[j]);
+				miu[c].add(wf[j]);
+				
+				// do
+				updateState(j,c);
+			}	
+		}
+		sigmaDotProduct = 0;
+		for (int t = 1; t <= cateIndexMax; t++){
+			sigmaDotProduct += miu[t].multiply(miu[t]);
+		}
+		sigmaDotProduct *= 0.5;
+	}
+	public double getSum() {
+		return sigmaDotProduct;
 	}
 
 }
