@@ -23,6 +23,7 @@ public class MCMC {
 	private double alpha = 1;
 	private double[] w = new double[Environment.trainSize * Environment.dataCateNum];
 	Vector8[] miu;
+	Vector4[] gamma;
 	Vector8[] wf;
 	private Data data;
 	private double[] maxSum = new double[sampleTimes];
@@ -47,17 +48,17 @@ public class MCMC {
 			z[i] = 0;
 			miu[i] = new Vector8(); // for each category
 			wf[i] = new Vector8(); // for each data
-			int yd = ((Vector4) data).getLabel(i);
+			int yd = ((Setting1) data).getLabel(i);
 			if (yd == 0) yy = 1;
 			else yy = 0;
-			tmp =((Vector4) data).deltaF_d(i);
+			tmp =((Setting1) data).deltaF_d(i);
 			wf[i].setValue(tmp);
 			wf[i].multiply(w[2 * i + yy]);
 			// test when wf = 0;
 //			if (wf[i].empty()){
 //				System.out.println("ahhhh, this is zero for wf["+i+"]");
 //				Vector8 a = new Vector8();
-//				a.setValue(((Vector4) data).deltaF_d(i));
+//				a.setValue(((Setting1) data).deltaF_d(i));
 //				
 //				a.print();
 //				Vector8 b = new Vector8();
@@ -71,7 +72,7 @@ public class MCMC {
 		// test
 //		System.out.println("\nafter init");
 //		for (int j = 0; j < 20; j ++){
-//			((Vector4) data).printV(j);
+//			((Setting1) data).printV(j);
 //			System.out.print("wf : ");
 //			wf[j].print();
 //			System.out.println("w[2*"+j+"] = "+w[2*j]);
@@ -208,9 +209,6 @@ public class MCMC {
 							System.exit(-1);
 						}
 					}
-					
-					
-					
 				}
 				logPmax = -1;
 				for (int k = 1; k <= max; k++){
@@ -469,12 +467,12 @@ public class MCMC {
 					sumTmp += Math.exp(logP[k] - logPmax);
 				}
 				logZ += Math.log(sumTmp);
-				double test = 0;
+//				double test = 0;
 				for (int k = 1; k <= max; k++){
 					p[k] = Math.exp(logP[k] - logZ);
-					test += p[k];
+//					test += p[k];
 				}
-				System.out.println("1 = " +test);
+//				System.out.println("1 = " +test);
 				
 				// test
 				condition.outln("for "+j);
@@ -633,10 +631,10 @@ public class MCMC {
 			z[i] = 0;
 			miu[i] = new Vector8(); // for each category
 			wf[i] = new Vector8(); // for each data
-			int yd = ((Vector4) data).getLabel(i);
+			int yd = ((Setting1) data).getLabel(i);
 			if (yd == 0) yy = 1;
 			else yy = 0;
-			tmp =((Vector4) data).deltaF_d(i);
+			tmp =((Setting1) data).deltaF_d(i);
 			wf[i].setValue(tmp);
 			wf[i].multiply(w[2 * i + yy]);
 		}
@@ -758,7 +756,9 @@ public class MCMC {
 		return cateIndexMax;
 	}
 	public Vector8 getMiu(int l) {
-		return miu[l];
+		Vector8 a = new Vector8();
+		a.add(miu[l]);
+		return a;
 	}
 	public int[] getNumberEachCate() {
 		int[] r = new int[cateIndexMax+1];
@@ -796,6 +796,24 @@ public class MCMC {
 	}
 	public double getSum() {
 		return sigmaDotProduct;
+	}
+	public void inferenceGamma() {
+		// TODO Auto-generated method stub
+		gamma = new Vector4[cateIndexMax + 1];
+		for (int i = 1; i < cateIndexMax + 1; i++){
+			gamma[i] = new Vector4();
+		}
+		for (int j = 0; j < stateNum; j++){
+			gamma[z[j]].add(((Setting1)data).getV4(j));
+		}
+		for (int i = 1; i < cateIndexMax + 1; i++){
+			gamma[i].multiply(1.0 / (1.0 * number[i]));
+		}
+	}
+	public Vector4 getGamma(int l) {
+		Vector4 a = new Vector4();
+		a.add(gamma[l]);
+		return a;
 	}
 
 }

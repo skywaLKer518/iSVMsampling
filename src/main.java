@@ -12,7 +12,7 @@ public class main{
 		 * 4,test
 		 */
 //		Environment c = new Environment();
-		Vector4 v4 = new Vector4();
+		Setting1 v4 = new Setting1();
 		iSVM lk = new iSVM();
 //		double u1 = 2;
 //		double theta = - 1 * Math.sin(u1 * u1 * u1 + 1.2) -u1 * Math.cos(1 * u1 + 0.7) - 1 * u1 + 2;

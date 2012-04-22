@@ -17,7 +17,7 @@ import java.util.List;
  */
 public class iSVM {
 	private static final double stoppingCriterion = 10;
-	private static final int maxIteration = 6000;
+	private static final int maxIteration = 200;
 	private static final double deltaL = 1.0;
 	private static final int paraSize = Environment.dataCateNum * Environment.trainSize;
 	private static final int sampleNum = 200; // TODO
@@ -108,11 +108,11 @@ public class iSVM {
 	}
 
 	public void go(Data v4, int setSize, int trainSize) {
-//		init(v4);
+		init(v4);
 //		train(v4,setSize,trainSize);
 //		init(v4);
 //		trainAlg1_2(v4,setSize,trainSize);
-		init(v4);
+//		init(v4);
 //		trainAlg2_1(v4,setSize,trainSize);
 //		trainAlg2_2(v4,setSize,trainSize);
 		
@@ -213,7 +213,9 @@ public class iSVM {
 					logVmax = logV[j];
 				lv.outln("logV["+j+"]= " +logV[j]);
 				logVt[j] = logV[j];
+				System.out.println(logV[j]);
 			}
+			
 			// test all the way
 			double t;
 			for (int i = 0; i < sampleNum; i++){
@@ -344,10 +346,10 @@ public class iSVM {
 					for (int d = 0; d < Environment.trainSize; d++){
 						if (z[d] != i) continue;
 //						num[i]++;
-						int yd = ((Vector4) v4).getLabel(d);
+						int yd = ((Setting1) v4).getLabel(d);
 						if (yd == 0) yy = 1;
 						else yy = 0;
-						tmp = ((Vector4) v4).deltaF_d(d);
+						tmp = ((Setting1) v4).deltaF_d(d);
 						r.setValue(tmp);
 						r.multiply(w[2 * d + yy]);//test 
 						miu[i].add(r);
@@ -364,15 +366,15 @@ public class iSVM {
 				for( int i = 0; i < paraSize; i++){
 					int d = i / Environment.dataCateNum;
 					int y = i % Environment.dataCateNum;
-					int yd = ((Vector4) v4).getLabel(d);
+					int yd = ((Setting1) v4).getLabel(d);
 					if (yd == y) mF[i][j] = 0;
 					else{
-						tmp = ((Vector4) v4).deltaF_d(d);
+						tmp = ((Setting1) v4).deltaF_d(d);
 						mF[i][j] = miu[z[d]].multiply(tmp);
 						// alternative implement way
 //						double []tmp2 = new double [etaLength1];
 //						tmp2 = miu[z[d]].getValue();
-//						mF[i][j] = ((Vector4) v4).computeF(tmp2,d,y,yd);
+//						mF[i][j] = ((Setting1) v4).computeF(tmp2,d,y,yd);
 					}
 				}
 			}
@@ -485,10 +487,10 @@ public class iSVM {
 			f_delta[i] = new Vector8();
 			int dd = i / 2;
 			int yy = i % 2;
-			int y = ((Vector4) v4).getLabel(dd);
+			int y = ((Setting1) v4).getLabel(dd);
 			if ( y == yy ) {}// do nothing
 			else{
-				tmpp = ((Vector4) v4).deltaF_d(dd);
+				tmpp = ((Setting1) v4).deltaF_d(dd);
 				f_delta[i].setValue(tmpp);
 			}
 		}
@@ -498,7 +500,7 @@ public class iSVM {
 		{
 //			if (k <= 2){
 //				for (int i = 0; i < 20; i++){
-//					((Vector4) v4).printV(i);
+//					((Setting1) v4).printV(i);
 //					System.out.println("w[2*"+i+"] = "+w[2*i]);
 //					System.out.println("w[2*"+i+"+1] = "+w[2*i+1]);
 //				}
@@ -574,7 +576,7 @@ public class iSVM {
 //			if (k == 1){
 //				Log changeW = new Log("updatedW.txt");
 //				for (int i = 0; i < trainSize; i++){
-//					int b = ((Vector4) v4).getLabel(i);
+//					int b = ((Setting1) v4).getLabel(i);
 //					if (b == 0) b=1;
 //					else b = 0;
 //					changeW.outln("w[2*"+i+"+"+b+"] = " + w[2*i+b]);
@@ -619,10 +621,10 @@ public class iSVM {
 			f_delta[i] = new Vector8();
 			int dd = i / 2;
 			int yy = i % 2;
-			int y = ((Vector4) v4).getLabel(dd);
+			int y = ((Setting1) v4).getLabel(dd);
 			if ( y == yy ) {}// do nothing
 			else{
-				tmpp = ((Vector4) v4).deltaF_d(dd);
+				tmpp = ((Setting1) v4).deltaF_d(dd);
 				f_delta[i].setValue(tmpp);
 			}
 		}
@@ -691,38 +693,38 @@ public class iSVM {
 			log2.out3ln();
 			
 			//double z = ApproximateNormal(w,);
-			int samNum = 100;
-			double logMax = 0, logZ, Z, sum = 0;
-			double[] logVtt = new double[samNum];
-			for (int i = 0; i < samNum; i++){
-				logVtt[i] = 0;
-				a.importanceS();
-				logVtt[i] = a.getSum();
-//				System.out.println("logv["+i+"] ="+logVtt[i]);
-				if (logVtt[i] > logMax)
-					logMax = logVtt[i];
-			}
-			logZ = logMax - Math.log(samNum);
-			for (int i = 0; i < samNum; i++){
-				sum += Math.exp(logVtt[i] - logMax);
-			}
-			logZ += Math.log(sum);
-			System.out.println("logZ = "+logZ);
-			logz.outln(logZ);
-			
-			double WB = 0;
-			for (int i = 0; i < paraSize; i++){
-				WB += w[i] * l[i];
-			}
-			System.out.println("WB = \n" + WB);
-			double objective = WB - logZ;
-			System.out.println("objective " + objective);
-			obj.outln(objective);
+//			int samNum = 100;
+//			double logMax = 0, logZ, Z, sum = 0;
+//			double[] logVtt = new double[samNum];
+//			for (int i = 0; i < samNum; i++){
+//				logVtt[i] = 0;
+//				a.importanceS();
+//				logVtt[i] = a.getSum();
+////				System.out.println("logv["+i+"] ="+logVtt[i]);
+//				if (logVtt[i] > logMax)
+//					logMax = logVtt[i];
+//			}
+//			logZ = logMax - Math.log(samNum);
+//			for (int i = 0; i < samNum; i++){
+//				sum += Math.exp(logVtt[i] - logMax);
+//			}
+//			logZ += Math.log(sum);
+//			System.out.println("logZ = "+logZ);
+//			logz.outln(logZ);
+//			
+//			double WB = 0;
+//			for (int i = 0; i < paraSize; i++){
+//				WB += w[i] * l[i];
+//			}
+//			System.out.println("WB = \n" + WB);
+//			double objective = WB - logZ;
+//			System.out.println("objective " + objective);
+//			obj.outln(objective);
 			
 			//
 			if (delta < stoppingCriterion)
 				break;
-			double m = (1 / 500.0 / Math.pow((1.0 * k),2.0 / 3.0));
+			double m = (1 / 500.0 /  Math.pow((1.0 * k),2.0 / 3.0));
 			for (int i = 0; i < paraSize; i++){
 				w[i] -= m * G[i];
 				if (w[i] > C)					w[i] = C;
@@ -732,7 +734,7 @@ public class iSVM {
 //			if (k == 1){
 //				Log changeW = new Log("updatedW.txt");
 //				for (int i = 0; i < trainSize; i++){
-//					int b = ((Vector4) v4).getLabel(i);
+//					int b = ((Setting1) v4).getLabel(i);
 //					if (b == 0) b=1;
 //					else b = 0;
 //					changeW.outln("w[2*"+i+"+"+b+"] = " + w[2*i+b]);
@@ -786,10 +788,10 @@ public class iSVM {
 		for (int i = 0; i < paraSize; i++){
 			int d = i / Environment.dataCateNum;
 			int y = i % Environment.dataCateNum;
-			int yd = ((Vector4) v4).getLabel(d);
+			int yd = ((Setting1) v4).getLabel(d);
 			if (yd == y) mF[i][sample] = 0;
 			else{
-				mF[i][sample] = ((Vector4) v4).computeF(eta[z[d]],d,y,yd);
+				mF[i][sample] = ((Setting1) v4).computeF(eta[z[d]],d,y,yd);
 			}
 		}
 	}
@@ -849,10 +851,10 @@ public class iSVM {
 			for (int j = 0; j < Environment.trainSize; j++){
 				if (z[j] != i) continue;
 				num[i]++;
-				int yd = ((Vector4) v4).getLabel(j);
+				int yd = ((Setting1) v4).getLabel(j);
 				if (yd == 0) y = 1;
 				else y = 0;
-				tmp = ((Vector4) v4).deltaF_d(j);
+				tmp = ((Setting1) v4).deltaF_d(j);
 				r.setValue(tmp);
 				r.multiply(w[2 * j + y]);//test
 				miuT[i].add(r);
@@ -872,7 +874,7 @@ public class iSVM {
 			}
 			int pos = 0, neg = 0;
 			for (int i = 0;i < 100; i++){
-				if (((Vector4) v4).getLabel(i) == 0)
+				if (((Setting1) v4).getLabel(i) == 0)
 					pos ++;
 				else neg++;
 			}
@@ -917,7 +919,7 @@ public class iSVM {
 		for (int i = 0; i < paraSize; i++){
 			int d = i / Environment.dataCateNum;
 			int y = i % Environment.dataCateNum;
-			int yd = ((Vector4) v4).getLabel(d);
+			int yd = ((Setting1) v4).getLabel(d);
 			if (y == yd) l[i] = 0;
 			else l[i] = deltaL; 
 		}
@@ -930,15 +932,20 @@ public class iSVM {
 	private void test(Data v4, int setSize, int trainSize) {
 		double pComponent[][] = new double[modelNum][Environment.maxComponent]; // record component weight for each, and for each model
 		Vector8 etaPost[][] = new Vector8[modelNum][Environment.maxComponent]; 
+		Vector4 gammaPost[][] = new Vector4[modelNum][Environment.maxComponent];
+		
 //		Vector8[] f_dis = new Vector8[trainSize];
 		Vector8 f_dis = new Vector8();
+		Vector8 discr = new Vector8();  // as the final eta
+		
 		// read w -- training result
 //		readW(new String("res/paraW(delta10.0k=5000Times200).txt"));  // delta 20
-		readW(new String("res/paraW(delta10.0k=6000Times200).txt"));  // delta 100
+		readW(new String("res/paraW(delta10.0k=6000Times200).txt"));  // delta 90 renewed sampling
 		
 		// construct markov chain
 		MCMC t = new MCMC(v4, trainSize, w, alphaDP);
 		t.go2();
+		
 		// sample models
 		int [] componentNum = new int[modelNum];
 		int [] numberData = new int[Environment.maxComponent];// in each component
@@ -946,11 +953,14 @@ public class iSVM {
 		for (int i = 0; i < modelNum; i++){
 			for (int j = 0; j < 50; j++)
 				t.oneSample2();
+			t.inferenceGamma();
 //			t.go();
 			componentNum[i] = t.getCateNumer();  // Note: from 1 to componentNum[1], not componentNum[] - 1
 			numberData = t.getNumberEachCate();
 			pComponent[i] = new double[componentNum[i]+1];
+			gammaPost[i] = new Vector4[componentNum[i]+1];
 			etaPost[i] = new Vector8[componentNum[i]+1];
+			// Probability of component
 			for (int j = 1; j < componentNum[i]+1; j ++){
 				pComponent[i][j] = (numberData[j] * 1.0) / (trainSize*1.0);
 				etaPost[i][j] = new Vector8();
@@ -958,19 +968,27 @@ public class iSVM {
 //				System.out.print(numberData[j] + " ");
 			}
 			System.out.println();
-			
+			// eta estimation for each component
 			for (int j = 1; j < componentNum[i]+1; j ++){
-				if (pComponent[i][j] == 0) 
+//				Vector8 tmp = new Vector8();
+//				tmp.add(t.getMiu(j));
+//				tmp.multiply(pComponent[i][j]);
+//				discr.add(tmp);
+				if (pComponent[i][j] == 0){ 
 					etaPost[i][j].reset();
-				else
+					gammaPost[i][j].reset();
+				}
+				else{
 					etaPost[i][j] = t.getMiu(j);
+					gammaPost[i][j] = t.getGamma(j);
+				}
 			}
 		}
 		
 		
 		// predict
 		for (int i = 0; i < trainSize; i++){
-			f_dis.setValue(((Vector4) v4).deltaF_d(i, 1));
+			f_dis.setValue(((Setting1) v4).deltaF_d(i, 0));
 			int predic = -1;
 			double aver = 0;
 			for (int j = 0; j < modelNum; j++){
@@ -984,11 +1002,20 @@ public class iSVM {
 //				}
 				
 			}
+			
 			aver = aver / (modelNum * 1.0);
-			if (aver < 0) predic = 1;
+			double ok = discr.multiply(f_dis);
+			ok = ok / ( 1.0 * modelNum );
+			
+			if ( Math.abs(ok - aver) > 0.1){
+				System.out.println("ok = "+ok+" aver = "+aver);
+				System.exit(-1);
+			}
+			
+			if (ok < 0) predic = 1;
 			else predic = 0;
-			int yy = ((Vector4) v4).getLabel(i);
-			System.out.println("Average score for i = "+i+"  with label "+yy +" : " +aver+"   "+(yy == predic));
+			int yy = ((Setting1) v4).getLabel(i);
+			System.out.println("Average score for i = "+i+"  with label "+yy +" : " +ok+"   "+(yy == predic));
 			
 			if (predic == yy)
 				score ++;
@@ -1014,14 +1041,14 @@ public class iSVM {
 //			disF[0] = 0; disF[1] = 0;
 //			for (int j = 0; j < Environment.dataCateNum; j++){
 //				for (int k = 0; k < sampleNum; k ++){
-//					disF[j] += ((Vector4) v4).computeF(eta[z[k]],i,j) * p[k];	
+//					disF[j] += ((Setting1) v4).computeF(eta[z[k]],i,j) * p[k];	
 //				}
 //			}
 //			if (disF[0] > disF[1])
 //				prediction[i] = 0;
 //			else
 //				prediction[i] = 1;
-//			score += ((Vector4) v4).labelTest(prediction[i], i);
+//			score += ((Setting1) v4).labelTest(prediction[i], i);
 //		}
 		
 	}
@@ -1060,8 +1087,8 @@ public class iSVM {
 			for (int j = 0; j <= cateIndexMax; j++){
 				if (number[j] <= 0)
 					continue;
-				disF0 += ((Vector4) v4).disFunc(eta[j],i,0) * 1 / (1.0 * cateNumber);
-				disF1 += ((Vector4) v4).disFunc(eta[j],i,1) * 1 / (1.0 * cateNumber);
+				disF0 += ((Setting1) v4).disFunc(eta[j],i,0) * 1 / (1.0 * cateNumber);
+				disF1 += ((Setting1) v4).disFunc(eta[j],i,1) * 1 / (1.0 * cateNumber);
 //				System.out.println("F =: (0)"+v4.disFunc(eta[j],i,0) * 1 / (1.0 * cateNumber));
 //				System.out.println("F =: (1)"+v4.disFunc(eta[j],i,0) * 1 / (1.0 * cateNumber));
 			}
@@ -1071,11 +1098,11 @@ public class iSVM {
 			//test TODO
 			if (prediction[i] == 0) predic0++;
 			else predic1++;
-			if (((Vector4) v4).getLabel(i) == 0) data0++;
+			if (((Setting1) v4).getLabel(i) == 0) data0++;
 			else data1++;
 			
 			int t = score; // test
-			score += ((Vector4) v4).labelTest(prediction[i], i);
+			score += ((Setting1) v4).labelTest(prediction[i], i);
 //			if (t == score){ // wrong
 //				System.out.print("--------------\nWrong\n   :\n");
 //				v4.printV(i);
@@ -1124,10 +1151,10 @@ public class iSVM {
 					drawEta(c);
 				}
 				// compute the acceptance probability; given f(x,y),eta,z
-				// that is,f(in vector4), eta[z[i]][], and eta[c]
-				m1 = ((Vector4) v4).disFunc(eta[z[k]], k);
+				// that is,f(in Setting1), eta[z[i]][], and eta[c]
+				m1 = ((Setting1) v4).disFunc(eta[z[k]], k);
 //				System.out.println("old "+m1);
-				m2 = ((Vector4) v4).disFunc(eta[c], k);
+				m2 = ((Setting1) v4).disFunc(eta[c], k);
 //				System.out.println("new "+m2);
 //				System.out.println("c = "+c);
 				if (m2 >= m1)
@@ -1228,7 +1255,7 @@ public class iSVM {
 	/*
 	 * update eta[z] according to the posterior distribution TODO
 	 * use rejection sampling.
-	 * ((Vector4) v4)
+	 * ((Setting1) v4)
 	 */
 	private double[] updateEta(Data v4, int com) {
 		double result[] = new double [etaLength1];
@@ -1267,7 +1294,7 @@ public class iSVM {
 //			r = Math.random() * k * q_eta; 
 			r = Math.random() * k; // omit q_eta because q_eta = p_eta_G0
 			for (int i = 0; i < size; i++){
-				sumF += ((Vector4) v4).disFunc(result, da[i]);
+				sumF += ((Setting1) v4).disFunc(result, da[i]);
 			}
 			sumF /= Environment.reduce;
 //			System.out.println("sumf =  "+sumF+"  size = "+size);
