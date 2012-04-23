@@ -17,7 +17,7 @@ import java.util.List;
  */
 public class iSVM {
 	private static final double stoppingCriterion = 10;
-	private static final int maxIteration = 200;
+	private static final int maxIteration = 8000;
 	private static final double deltaL = 1.0;
 	private static final int paraSize = Environment.dataCateNum * Environment.trainSize;
 	private static final int sampleNum = 200; // TODO
@@ -110,9 +110,7 @@ public class iSVM {
 	public void go(Data v4, int setSize, int trainSize) {
 		init(v4);
 //		train(v4,setSize,trainSize);
-//		init(v4);
 //		trainAlg1_2(v4,setSize,trainSize);
-//		init(v4);
 //		trainAlg2_1(v4,setSize,trainSize);
 //		trainAlg2_2(v4,setSize,trainSize);
 		
@@ -632,8 +630,7 @@ public class iSVM {
 		
 		do
 		{
-			if (k > maxIteration)
-				break;
+	
 			
 			// a, sample Z, using M-H Alg.
 			//    compute mF[][]
@@ -722,8 +719,11 @@ public class iSVM {
 //			obj.outln(objective);
 			
 			//
-			if (delta < stoppingCriterion)
+			if (delta < stoppingCriterion || k > maxIteration){
+				
 				break;
+			}
+				
 			double m = (1 / 500.0 /  Math.pow((1.0 * k),2.0 / 3.0));
 			for (int i = 0; i < paraSize; i++){
 				w[i] -= m * G[i];
@@ -933,14 +933,12 @@ public class iSVM {
 		double pComponent[][] = new double[modelNum][Environment.maxComponent]; // record component weight for each, and for each model
 		Vector8 etaPost[][] = new Vector8[modelNum][Environment.maxComponent]; 
 		Vector4 gammaPost[][] = new Vector4[modelNum][Environment.maxComponent];
-		
-//		Vector8[] f_dis = new Vector8[trainSize];
 		Vector8 f_dis = new Vector8();
-		Vector8 discr = new Vector8();  // as the final eta
+//		Vector8 discr = new Vector8();  // as the final eta
 		
 		// read w -- training result
-//		readW(new String("res/paraW(delta10.0k=5000Times200).txt"));  // delta 20
-		readW(new String("res/paraW(delta10.0k=6000Times200).txt"));  // delta 90 renewed sampling
+//		readW(new String("res/paraW(delta10.0k=5000Times200).txt"));  // delta 20 ?
+		readW(new String("res/paraW(delta10.0k=200Times200).txt"));  // delta 15 renewed sampling
 		
 		// construct markov chain
 		MCMC t = new MCMC(v4, trainSize, w, alphaDP);
@@ -964,16 +962,13 @@ public class iSVM {
 			for (int j = 1; j < componentNum[i]+1; j ++){
 				pComponent[i][j] = (numberData[j] * 1.0) / (trainSize*1.0);
 				etaPost[i][j] = new Vector8();
-				System.out.print(pComponent[i][j] + " ");
+				gammaPost[i][j] = new Vector4();
+				//System.out.print(pComponent[i][j] + " ");
 //				System.out.print(numberData[j] + " ");
 			}
-			System.out.println();
+			//System.out.println();
 			// eta estimation for each component
 			for (int j = 1; j < componentNum[i]+1; j ++){
-//				Vector8 tmp = new Vector8();
-//				tmp.add(t.getMiu(j));
-//				tmp.multiply(pComponent[i][j]);
-//				discr.add(tmp);
 				if (pComponent[i][j] == 0){ 
 					etaPost[i][j].reset();
 					gammaPost[i][j].reset();
@@ -985,39 +980,47 @@ public class iSVM {
 			}
 		}
 		
-		
+		double []prob = new double[Environment.maxComponent];
+		double aver = 0;
+		int predict = -1;
+		Vector4 da = new Vector4();
 		// predict
-		for (int i = 0; i < trainSize; i++){
+		for (int i = trainSize; i < setSize; i++){
+//		for (int i = 0; i < trainSize; i++){	
 			f_dis.setValue(((Setting1) v4).deltaF_d(i, 0));
-			int predic = -1;
-			double aver = 0;
+			da = ((Setting1) v4).getV4(i);
+			predict = -1;
+			aver = 0;
+
 			for (int j = 0; j < modelNum; j++){
+				// compute p(z[d] = k), k = 1,2,3,...,cateIndexMax
+				double sumt = 0;
 				for (int k = 1; k <= componentNum[j]; k++){
-					if (pComponent[j][k] == 0) continue;
-					aver += pComponent[j][k] * etaPost[j][k].multiply(f_dis);
+					prob[k] = pComponent[j][k] * Math.exp(-0.5 * (da.minus(gammaPost[j][k])).norm2());
+					sumt += prob[k];
 				}
+				for (int k = 1; k <= componentNum[j]; k++){
+					prob[k] = prob[k] / sumt;
+				}
+				// compute prediction value
+				for (int k = 1; k <= componentNum[j]; k++){
+					aver += prob[k] * etaPost[j][k].multiply(f_dis);
+				}
+			}
+			aver = aver / (1.0 * modelNum);
+			if (aver < 0) predict = 1;
+			else predict = 0;
 //				System.out.println("\nmodelNum = "+modelNum);
 //				for (int k = 1; k <= componentNum[j]; k++){
 //					System.out.println(pComponent[j][k] +" " + etaPost[j][k].multiply(f_dis));
 //				}
 				
-			}
 			
-			aver = aver / (modelNum * 1.0);
-			double ok = discr.multiply(f_dis);
-			ok = ok / ( 1.0 * modelNum );
 			
-			if ( Math.abs(ok - aver) > 0.1){
-				System.out.println("ok = "+ok+" aver = "+aver);
-				System.exit(-1);
-			}
-			
-			if (ok < 0) predic = 1;
-			else predic = 0;
 			int yy = ((Setting1) v4).getLabel(i);
-			System.out.println("Average score for i = "+i+"  with label "+yy +" : " +ok+"   "+(yy == predic));
+			System.out.println("Average score for i = "+i+"  with label "+yy +" : " +aver+"   "+(yy == predict));
 			
-			if (predic == yy)
+			if (predict == yy)
 				score ++;
 		}
 		System.out.println("score is "+score);

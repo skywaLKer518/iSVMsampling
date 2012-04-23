@@ -105,4 +105,11 @@ public class Vector4{
 		}
 		return t;
 	}
+	public double norm2(){
+		double r = 0;
+		for (int i = 0; i < 4; i ++){
+			r += d[i] * d[i];
+		}
+		return r;
+	}
 }
