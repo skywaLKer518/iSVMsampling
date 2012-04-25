@@ -16,15 +16,15 @@ import java.util.List;
  * use stochastic approximation algorithm to get optimal parameters
  */
 public class iSVM {
-	private static final double stoppingCriterion = 10;
-	private static final int maxIteration = 8000;
+	private static final double stoppingCriterion = 1 ;
+	private static final int maxIteration = 36000;
 	private static final double deltaL = 1.0;
 	private static final int paraSize = Environment.dataCateNum * Environment.trainSize;
 	private static final int sampleNum = 200; // TODO
 	private static final double alphaDP = 0.5;
 	private static final double betaDP = 1.0;
 	private static final double C = 3.0;
-	private static final int modelNum = 100;
+	private static final int modelNum = 200;
 	private final int etaLength1 = 8; // for data setting 1
 	private final int gammaLength1 = 4;
 	private double logPartition = 0;
@@ -113,7 +113,7 @@ public class iSVM {
 //		trainAlg1_2(v4,setSize,trainSize);
 //		trainAlg2_1(v4,setSize,trainSize);
 //		trainAlg2_2(v4,setSize,trainSize);
-
+//		trainAlg3_1(v4,setSize,trainSize);
 		tmpuse();
 		
 //		for (int k = 0; k < 200; k++)
@@ -600,11 +600,9 @@ public class iSVM {
 	 */
 	private void trainAlg2_2(Data v4, int setSize, int trainSize) {
 //		readW(new String("res/paraW(delta10.0k=5000Times200).txt"));
-		
 		int k = 1; // k_th iteration
 		// test
 		double logVt[] = new double[sampleNum];
-//		
 		Log lv = new Log("res/deltaAlg2_2(delta"+stoppingCriterion+"k"+maxIteration+"Times"+Environment.sampleTimes+").txt");
 		Log logz = new Log("res/logZAlg2_2(delta"+stoppingCriterion+"k"+maxIteration+"Times"+Environment.sampleTimes+").txt");
 		Log log2 = new Log("res/EFAlg2_2(delta"+stoppingCriterion+"k"+maxIteration+"Times"+Environment.sampleTimes+").txt");
@@ -626,12 +624,8 @@ public class iSVM {
 				f_delta[i].setValue(tmpp);
 			}
 		}
-		
-		
 		do
 		{
-	
-			
 			// a, sample Z, using M-H Alg.
 			//    compute mF[][]
 			MCMC a = new MCMC(v4, trainSize, w, alphaDP);
@@ -644,6 +638,149 @@ public class iSVM {
 				cateIndexMax = a.getCateNumer();
 				for (int l = 1; l <= cateIndexMax; l ++){
 //					miu[l].reset();
+					miu[l] = a.getMiu(l);
+				}
+				for (int j = 0; j < paraSize; j++){
+					int dd = j/2;
+					mF[j][i] = miu[z[dd]].multiply(f_delta[j]);
+				}
+				log3.outln(mF[0][i]);
+			}
+			
+			// b, compute EF
+			for (int j = 0; j < paraSize; j++){
+				EF[j] = 0;
+				for (int i = 0; i < sampleNum; i++){
+					EF[j] += mF[j][i];
+				}
+				EF[j] /= 1.0 * sampleNum;
+			}
+			// c, update w
+			double delta = 0;
+			for (int i = 0; i < paraSize; i++){
+				G[i] = EF[i] - l[i];
+				delta += G[i] * G[i];
+			}
+			// test all the way
+			System.out.println("k = "+k+"; ");
+			System.out.println("delta  = " + delta);
+			if ( k % 100 == 1)
+				lv.outln("k = "+k);
+			NumberFormat num = NumberFormat.getInstance();
+			num.setMaximumFractionDigits(0);
+//			lv.outln(num.format(delta));
+			lv.outln(delta);
+			if ( k % 100 == 0)
+				lv.outln("\n\n");
+			
+			log2.outln("k = "+k);
+			for (int i = 0; i < paraSize; i++){
+				log2.outln("EF["+i+"] = " + EF[i]+ " l["+i+"] = "+l[i]);
+			}
+			log2.outln("u[1-sampleNum] = ");
+			for (int q = 0; q < sampleNum; q++){
+				log2.out(u[q]+" ");
+			}
+			log2.out3ln();
+			//double z = ApproximateNormal(w,);
+//			int samNum = 100;
+//			double logMax = 0, logZ, Z, sum = 0;
+//			double[] logVtt = new double[samNum];
+//			for (int i = 0; i < samNum; i++){
+//				logVtt[i] = 0;
+//				a.importanceS();
+//				logVtt[i] = a.getSum();
+////				System.out.println("logv["+i+"] ="+logVtt[i]);
+//				if (logVtt[i] > logMax)
+//					logMax = logVtt[i];
+//			}
+//			logZ = logMax - Math.log(samNum);
+//			for (int i = 0; i < samNum; i++){
+//				sum += Math.exp(logVtt[i] - logMax);
+//			}
+//			logZ += Math.log(sum);
+//			System.out.println("logZ = "+logZ);
+//			logz.outln(logZ);
+//			
+//			double WB = 0;
+//			for (int i = 0; i < paraSize; i++){
+//				WB += w[i] * l[i];
+//			}
+//			System.out.println("WB = \n" + WB);
+//			double objective = WB - logZ;
+//			System.out.println("objective " + objective);
+//			obj.outln(objective);
+			//
+			if (delta < stoppingCriterion || k > maxIteration){
+				break;
+			}
+			double m = (1 / 500.0 /  Math.pow((1.0 * k),2.0 / 3.0));
+			for (int i = 0; i < paraSize; i++){
+				w[i] -= m * G[i];
+				if (w[i] > C)					w[i] = C;
+				if (w[i] < 0)					w[i] = 0;
+			}
+//			// see w
+//			if (k == 1){
+//				Log changeW = new Log("updatedW.txt");
+//				for (int i = 0; i < trainSize; i++){
+//					int b = ((Setting1) v4).getLabel(i);
+//					if (b == 0) b=1;
+//					else b = 0;
+//					changeW.outln("w[2*"+i+"+"+b+"] = " + w[2*i+b]);
+//				}
+//				changeW.close();
+//			}
+			k++;
+		}while (true);
+		lv.close();
+		log2.close();
+		log3.close();
+		trainEndLog();
+		logz.close();
+		obj.close();
+		return;
+	}
+	
+	private void trainAlg3_1(Data v4, int setSize, int trainSize) {
+		readW(new String("res/paraW(delta10.0k=1000Times200).txt"));
+		int k = 1; // k_th iteration
+		// test
+		double logVt[] = new double[sampleNum];
+		Log lv = new Log("res/deltaAlg3_1(delta"+stoppingCriterion+"k"+maxIteration+"Times"+Environment.sampleTimes+").txt");
+		Log logz = new Log("res/logZAlg3_1(delta"+stoppingCriterion+"k"+maxIteration+"Times"+Environment.sampleTimes+").txt");
+		Log log2 = new Log("res/EFAlg3_1(delta"+stoppingCriterion+"k"+maxIteration+"Times"+Environment.sampleTimes+").txt");
+		Log log3 = new Log("res/sampleFAlg3_1(delta"+stoppingCriterion+"k"+maxIteration+"Times"+Environment.sampleTimes+").txt");
+		Log obj = new Log("res/objAlg3_1(delta"+stoppingCriterion+"k"+maxIteration+"Times"+Environment.sampleTimes+").txt");
+		// ~test
+
+		// compute f_delta for all d,y
+		Vector8[] f_delta = new Vector8[paraSize];
+		double [] tmpp = new double[8];
+		for (int i = 0; i < paraSize; i++){
+			f_delta[i] = new Vector8();
+			int dd = i / 2;
+			int yy = i % 2;
+			int y = ((Setting1) v4).getLabel(dd);
+			if ( y == yy ) {}// do nothing
+			else{
+				tmpp = ((Setting1) v4).deltaF_d(dd);
+				f_delta[i].setValue(tmpp);
+			}
+		}
+		do
+		{
+			// a, sample Z, using M-H Alg.
+			//    compute mF[][]
+			MCMC a = new MCMC(v4, trainSize, w, alphaDP);
+			a.go3();
+			
+			log3.outln("k = "+k+"; mF[0][j] ---");
+			for (int i = 0; i < sampleNum; i++){
+				a.oneSample3();
+				z = a.getZ();
+				cateIndexMax = a.getCateNumer();
+				for (int l = 1; l <= cateIndexMax; l ++){
 					miu[l] = a.getMiu(l);
 				}
 				for (int j = 0; j < paraSize; j++){
@@ -720,7 +857,6 @@ public class iSVM {
 			
 			//
 			if (delta < stoppingCriterion || k > maxIteration){
-				
 				break;
 			}
 				
@@ -933,25 +1069,26 @@ public class iSVM {
 		double pComponent[][] = new double[modelNum][Environment.maxComponent]; // record component weight for each, and for each model
 		Vector8 etaPost[][] = new Vector8[modelNum][Environment.maxComponent]; 
 		Vector4 gammaPost[][] = new Vector4[modelNum][Environment.maxComponent];
+		double predictValue[] = new double[modelNum]; // record predicting value of one data from each model
+		
 		Vector8 f_dis = new Vector8();
-		
-		// read w -- training result
-//		readW(new String("res/paraW(delta10.0k=5000Times200).txt"));  // delta 20 ?
-		readW(new String("res/paraW(delta10.0k=200Times200).txt"));  // delta 15 renewed sampling
-		
-		// construct markov chain
-		MCMC t = new MCMC(v4, trainSize, w, alphaDP);
-		t.go2();
-		
 		// sample models
 		int [] componentNum = new int[modelNum];
 		int [] numberData = new int[Environment.maxComponent];// in each component
+	
+		// read w -- training result
+//		readW(new String("res/paraW(delta10.0k=5000Times200).txt"));  // delta 20 ?
+//		readW(new String("res/paraW(delta10.0k=200Times200).txt"));  // delta 15 renewed sampling
+		readW(new String("res/paraW(delta10.0k=1000Times200).txt")); // alg 3_1 10
+		// construct markov chain
+		MCMC t = new MCMC(v4, trainSize, w, alphaDP);
+		t.go3();
 		
 		for (int i = 0; i < modelNum; i++){
 			for (int j = 0; j < 50; j++)
-				t.oneSample2();
+				t.oneSample3();
 			t.inferenceGamma();
-//			t.go();
+			
 			componentNum[i] = t.getCateNumer();  // Note: from 1 to componentNum[1], not componentNum[] - 1
 			numberData = t.getNumberEachCate();
 			pComponent[i] = new double[componentNum[i]+1];
@@ -980,7 +1117,6 @@ public class iSVM {
 		
 		double []prob = new double[Environment.maxComponent];
 		double []value = new double[Environment.maxComponent];
-		int [] pre = new int[Environment.maxComponent];
 		double aver = 0;
 		int predict = -1;
 		Vector4 da = new Vector4();
@@ -991,9 +1127,11 @@ public class iSVM {
 			da = ((Setting1) v4).getV4(i);
 			predict = -1;
 			aver = 0;
+		
 			int yy = ((Setting1) v4).getLabel(i);
 
 			for (int j = 0; j < modelNum; j++){
+				predictValue[j] = 0;
 				// compute p(z[d] = k), k = 1,2,3,...,cateIndexMax
 				double sumt = 0;
 				for (int k = 1; k <= componentNum[j]; k++){
@@ -1008,8 +1146,12 @@ public class iSVM {
 				}
 				// compute prediction value
 				for (int k = 1; k <= componentNum[j]; k++){
-					aver += prob[k] * value[k];
+					predictValue[j] += prob[k] * value[k];
+//					aver += prob[k] * value[k];
 				}
+			}
+			for (int j = 0; j < modelNum; j++){
+				aver += predictValue[j];
 			}
 			aver = aver / (1.0 * modelNum);
 			if (aver < 0) predict = 1;
@@ -1020,7 +1162,6 @@ public class iSVM {
 //				}
 			
 			System.out.println("Average score for i = "+i+"  with label "+yy +" : " +aver+"   "+(yy == predict));
-			
 			if (predict == yy)
 				score ++;
 		}

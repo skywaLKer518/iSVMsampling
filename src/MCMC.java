@@ -24,6 +24,7 @@ public class MCMC {
 	private double[] w = new double[Environment.trainSize * Environment.dataCateNum];
 	Vector8[] miu;
 	Vector4[] gamma;
+	Vector4[] x;
 	Vector8[] wf;
 	private Data data;
 	private double[] maxSum = new double[sampleTimes];
@@ -40,6 +41,8 @@ public class MCMC {
 
 		miu = new Vector8[Environment.trainSize];
 		wf =  new Vector8[Environment.trainSize];
+		x = new Vector4[Environment.trainSize];
+		gamma = new Vector4[Environment.trainSize];
 		//
 //		init();
 		int yy;
@@ -47,6 +50,7 @@ public class MCMC {
 		for (int i = 0; i < stateNum; i++){
 			z[i] = 0;
 			miu[i] = new Vector8(); // for each category
+			gamma[i] = new Vector4(); 
 			wf[i] = new Vector8(); // for each data
 			int yd = ((Setting1) data).getLabel(i);
 			if (yd == 0) yy = 1;
@@ -54,6 +58,8 @@ public class MCMC {
 			tmp =((Setting1) data).deltaF_d(i);
 			wf[i].setValue(tmp);
 			wf[i].multiply(w[2 * i + yy]);
+			x[i] = ((Setting1) data).getV4(i);
+			
 			// test when wf = 0;
 //			if (wf[i].empty()){
 //				System.out.println("ahhhh, this is zero for wf["+i+"]");
@@ -162,24 +168,6 @@ public class MCMC {
 				else max = cateIndexMax;
 				
 				for (int k = 1; k <= max; k++){
-//					if (k == z[j]){
-//						logP_0 = Math.log((number[k] - 1) * 1.0 / ((observed * 1.0) + alpha - 1));
-//						logP[k] = sigma+logP_0;
-//					}
-//					else if (number[k] > 0){
-//						logP_0 = Math.log((number[k]) * 1.0 / ((observed * 1.0) + alpha - 1));
-//						deltaSigma = (miu[k].minus(miu[z[j]])).multiply(wf[j]) + wf[j].multiply(wf[j]);
-//						logP[k] = sigma + deltaSigma + logP_0;
-//					}
-//					else if (k == minN){
-//						logP_0 = Math.log( alpha / ((observed * 1.0) + alpha - 1));
-//						deltaSigma = (miu[k].minus(miu[z[j]])).multiply(wf[j]) + wf[j].multiply(wf[j]);
-//						logP[k] = sigma + deltaSigma + logP_0;
-//					}
-//					else{ // number[k] = 0, k != minN it is a useless component index, which should be deleted
-//						logP[k] = - Infinity;
-//					}
-					
 					if (k == z[j]){
 						if (number[k] == 1){ // ( k == minN)impossible
 							logP[k] = - Infinity;
@@ -250,7 +238,112 @@ public class MCMC {
 		}
 		
 	}
-	
+	public void oneSample3() {
+		double [] logP = new double[stateNum],p = new double[stateNum];
+		double logPmax = 0, logZ = 0, deltaSigma = 0, sigma = 0, logP_0 = 0, r = 0, F = 0;
+
+		// initial sigma
+		for (int t = 1; t <= cateIndexMax; t++){
+			sigma += miu[t].multiply(miu[t]);
+		}
+		sigma *= 0.5;
+		for (int i = 0; i < 1; i++){ // TODO
+			// sample z[j] for each j
+			for (int j = 0; j < stateNum; j++){
+				// compute p[k] for each possible k
+				int max = 0;
+				if (minN > cateIndexMax) max = minN;
+				else max = cateIndexMax;
+				
+				for (int k = 1; k <= max; k++){
+					if (k == z[j]){
+						if (number[k] == 1){ // ( k == minN)impossible
+							logP[k] = - Infinity;
+						}
+						else if (number[k] > 1){
+							logP[k] = Math.log((number[k] - 1) * 1.0 / ((observed * 1.0) + alpha - 1)) + sigma 
+									- 0.5* gamma[k].minus(x[j]).norm2();
+						}
+						else{
+							System.out.println("Error in go3()");
+							System.exit(-1);
+						}
+					}
+					else{
+						if (number[k] >= 1){
+							logP[k] = Math.log((number[k]) * 1.0 / ((observed * 1.0) + alpha - 1)) + sigma + 
+									wf[j].multiply(wf[j]) + (miu[k].minus(miu[z[j]]).multiply(wf[j]))
+									- 0.5 * gamma[k].minus(x[j]).norm2();
+						}
+						else if (number[k] == 0){
+							if ( k == minN){
+								logP[k] = Math.log(alpha / ((observed * 1.0) + alpha - 1)) + sigma +
+									wf[j].multiply(wf[j]) + (miu[k].minus(miu[z[j]]).multiply(wf[j]))
+									- Math.log(Math.sqrt(2)) - 7.0 / 16.0 * x[j].norm2();   // integration G_0(\gamma)Likelyhood(\gamma,x)
+							}
+							else logP[k] = - Infinity;
+						}
+						else{
+							System.out.println("Error in go3()");
+							System.exit(-1);
+						}
+					}
+				}
+				logPmax = -1;
+				for (int k = 1; k <= max; k++){
+					if (logP[k] > logPmax)
+						logPmax = logP[k];
+				}
+				logZ = logPmax;
+				double sumTmp = 0;
+				for (int k = 1; k <= max; k++){
+					sumTmp += Math.exp(logP[k] - logPmax);
+				}
+				logZ += Math.log(sumTmp);
+				for (int k = 1; k <= max; k++){
+					p[k] = Math.exp(logP[k] - logZ);
+				}
+				
+				// standard sampling
+				r = Math.random();
+				F = 0;
+				int choose = 1;
+				do{
+					F += p[choose];
+					if (r < F)
+						break;
+					choose++;
+				}
+				while(true);
+				
+				// update sigma, miu,
+				if ( choose == z[j] )
+					sigma += 0;
+				else{
+					sigma += (miu[choose].minus(miu[z[j]])).multiply(wf[j]) + wf[j].multiply(wf[j]);
+					miu[z[j]].sub(wf[j]);
+					miu[choose].add(wf[j]);
+				}
+				
+				
+				
+				
+				updateState(j,choose);
+			}	
+			
+			for (int k = 1; k < cateIndexMax + 1; k++){
+				gamma[k].reset();
+			}
+			for (int j = 0; j < stateNum; j++){
+				gamma[z[j]].add(x[j]);
+			}
+			for (int k = 1; k < cateIndexMax + 1; k++){
+				if (number[k] > 0)
+				gamma[k].multiply(1.0 / (1.0 * number[k]));
+			}
+		}
+		
+	}
 	// using Metropolis Hastings
 	public void go(){
 		int c = 0;//,yy = 0;;
@@ -362,7 +455,6 @@ public class MCMC {
 		Log condition = new Log("conditionalP.txt");
 		Log certainZ = new Log("res/certainZ.txt");
 		for (int i = 0; i < sampleTimes; i++){
-			
 			// debug
 			boolean debug = false; // TODO
 			double sum = 0;
@@ -391,7 +483,6 @@ public class MCMC {
 			}
 			maxSum[i] = sum;
 			// ~debug
-						
 			// sample z[j] for each j
 			for (int j = 0; j < stateNum; j++){
 				if ( j == 5 )certainZ.outln(z[j]);
@@ -405,25 +496,7 @@ public class MCMC {
 				else max = cateIndexMax;
 				
 				for (int k = 1; k <= max; k++){
-					
-//					if (k == z[j]){
-//						logP_0 = Math.log((number[k] - 1) * 1.0 / ((observed * 1.0) + alpha - 1));
-//						logP[k] = sigma+logP_0;
-//					}
-//					else if (number[k] > 0){
-//						logP_0 = Math.log((number[k]) * 1.0 / ((observed * 1.0) + alpha - 1));
-//						deltaSigma = (miu[k].minus(miu[z[j]])).multiply(wf[j]) + wf[j].multiply(wf[j]);
-//						logP[k] = sigma + deltaSigma + logP_0;
-//					}
-//					else if (k == minN){
-//						logP_0 = Math.log( alpha / ((observed * 1.0) + alpha - 1));
-//						deltaSigma = (miu[k].minus(miu[z[j]])).multiply(wf[j]) + wf[j].multiply(wf[j]);
-//						logP[k] = sigma + deltaSigma + logP_0;
-//					}
-//					else{ // number[k] = 0, k != minN it is a useless component index, which should be deleted
-//						logP[k] = - Infinity;
-//					}
-					
+										
 					if (k == z[j]){
 						if (number[k] == 1){ // ( k == minN)impossible
 							logP[k] = - Infinity;
@@ -467,12 +540,9 @@ public class MCMC {
 					sumTmp += Math.exp(logP[k] - logPmax);
 				}
 				logZ += Math.log(sumTmp);
-//				double test = 0;
 				for (int k = 1; k <= max; k++){
 					p[k] = Math.exp(logP[k] - logZ);
-//					test += p[k];
 				}
-//				System.out.println("1 = " +test);
 				
 				// test
 				condition.outln("for "+j);
@@ -521,7 +591,178 @@ public class MCMC {
 		certainZ.close();
 	}
 	
+	// using Gibbs Sampling
+	// but distribution has taken \gamma into consideration
+	public void go3(){
+		double [] logP = new double[stateNum],p = new double[stateNum+1];
+		double logPmax = 0, logZ = 0, deltaSigma = 0, sigma = 0, logP_0 = 0, r = 0, F = 0;
 
+		initialZ();
+		Log sample = new Log("res/sampleProcess.txt");
+		// initial sigma
+		for (int t = 1; t <= cateIndexMax; t++){
+			sigma += miu[t].multiply(miu[t]);
+		}
+		sigma *= 0.5;
+		
+		Log condition = new Log("conditionalP.txt");
+		Log certainZ = new Log("res/certainZ.txt");
+		for (int i = 0; i < sampleTimes; i++){
+			
+			// debug
+			boolean debug = false; // TODO
+			double sum = 0;
+			if (debug) System.out.println("\nCurrent state is :");
+			sample.outln("\nCurrent state is :");
+			for (int j = 0; j < stateNum; j ++){
+				if (debug) System.out.print(z[j]+" ");
+				sample.out(z[j]+" ");
+				if (j % 10 == 9){
+					if (debug) System.out.println();
+					sample.newline();
+				}
+			}
+			sum = 0;
+			for (int t = 1; t <= cateIndexMax; t++){
+				sum += miu[t].multiply(miu[t]);
+				if (debug) System.out.println("number["+t+"] = : "+number[t]+ "  miu["+t+"]"+"^2: "+miu[t].multiply(miu[t]));
+				sample.outln("number["+t+"] = : "+number[t]+ "  miu["+t+"]"+"^2: "+miu[t].multiply(miu[t]));
+			}
+			sum *= 0.5;
+			if (debug) System.out.println(i+"th iteration, sum of miu = : "+sum);
+			sample.outln(i+"th iteration, sum of miu = : "+sum);
+			if (sum - sigma > 1){
+				System.out.println("sum = "+sum +"  sigma = "+sigma);
+				System.exit(-1);
+			}
+			maxSum[i] = sum;
+			// ~debug
+						
+			// sample z[j] for each j
+			for (int j = 0; j < stateNum; j++){
+				if ( j == 5 )certainZ.outln(z[j]);
+				// compute p[k] for each possible k
+				/*
+				 * a, logp
+				 * b, p
+				 */
+				int max = 0;
+				if (minN > cateIndexMax) max = minN;
+				else max = cateIndexMax;
+				
+				for (int k = 1; k <= max; k++){
+										
+					if (k == z[j]){
+						if (number[k] == 1){ // ( k == minN)impossible
+							logP[k] = - Infinity;
+						}
+						else if (number[k] > 1){
+							logP[k] = Math.log((number[k] - 1) * 1.0 / ((observed * 1.0) + alpha - 1)) + sigma
+									- 0.5* gamma[k].minus(x[j]).norm2();
+						}
+						else{
+							System.out.println("Error in go3()");
+							System.exit(-1);
+						}
+					}
+					else{
+						if (number[k] >= 1){
+							logP[k] = Math.log((number[k]) * 1.0 / ((observed * 1.0) + alpha - 1)) + sigma + 
+									wf[j].multiply(wf[j]) + (miu[k].minus(miu[z[j]]).multiply(wf[j]))
+									- 0.5* gamma[k].minus(x[j]).norm2();
+						}
+						else if (number[k] == 0){
+							if ( k == minN){
+								logP[k] = Math.log(alpha / ((observed * 1.0) + alpha - 1)) + sigma +
+									wf[j].multiply(wf[j]) + (miu[k].minus(miu[z[j]]).multiply(wf[j]))
+									-Math.log(Math.sqrt(2)) - 7.0 / 16.0 * x[j].norm2();   // integration G_0(\gamma)Likelyhood(\gamma,x)
+							}
+							else logP[k] = - Infinity;
+						}
+						else{
+							System.out.println("Error in go3()");
+							System.exit(-1);
+						}
+					}
+				}
+				logPmax = -1;
+				for (int k = 1; k <= max; k++){
+					if (logP[k] > logPmax)
+						logPmax = logP[k];
+				}
+				logZ = logPmax;
+				double sumTmp = 0;
+				for (int k = 1; k <= max; k++){
+					sumTmp += Math.exp(logP[k] - logPmax);
+				}
+				logZ += Math.log(sumTmp);
+//				double sumt = 0;
+				for (int k = 1; k <= max; k++){
+					p[k] = Math.exp(logP[k] - logZ);
+//					sumt += p[k];
+				}
+//				System.out.println("1 = " +sumt);
+				
+				// test
+				condition.outln("for "+j);
+				for (int k = 1; k <= max; k++){
+					condition.outln(p[k]);
+				} // ~test
+				
+				// standard sampling
+				r = Math.random();
+				F = 0;
+				int choose = 1;
+				do{
+					if (choose == 100){
+						System.out.println("sb");
+					}
+					F += p[choose];
+					if (r < F)
+						break;
+					choose++;
+				}
+				while(true);
+				
+				// update sigma, miu
+				if ( choose == z[j] )
+					sigma += 0;
+				else{
+					sigma += (miu[choose].minus(miu[z[j]])).multiply(wf[j]) + wf[j].multiply(wf[j]);
+					miu[z[j]].sub(wf[j]);
+					miu[choose].add(wf[j]);
+				}
+				updateState(j,choose);
+			}
+			
+			for (int k = 1; k < cateIndexMax + 1; k++){
+				gamma[k].reset();
+			}
+			for (int j = 0; j < stateNum; j++){
+				gamma[z[j]].add(x[j]);
+			}
+			for (int k = 1; k < cateIndexMax + 1; k++){
+				if (number[k] > 0)
+				gamma[k].multiply(1.0 / (1.0 * number[k]));
+			}
+		}
+		
+		Log s = new Log("res/probLog.txt");
+		Log v = new Log("res/prob.txt");
+		s.outln("accept number: "+acc);
+		s.outln("reject number: "+rej);
+		for (int i = 0;i < sampleTimes; i++){
+//			s.outln("sum : "+maxSum[i]);
+			s.outln(maxSum[i]);
+			v.outln(Math.exp(maxSum[i]));
+		}
+		s.close();
+		v.close();
+		
+		sample.close();
+		condition.close();
+		certainZ.close();
+	}
 
 	// correct: use c to update z[i] with c
 	private void updateState(int i, int c){
@@ -669,14 +910,17 @@ public class MCMC {
 		observed = 100;
 		
 		shuffleZ();
-//		double[] tmp = new double[8];
-//		int yy = 0;
-//		Vector8 r = new Vector8();
 		for (int j = 0; j < stateNum; j++){
 			miu[j].reset();
+			gamma[j].reset();
 		}
 		for (int j = 0; j < stateNum; j++){
 			miu[z[j]].add(wf[j]);
+			gamma[z[j]].add(((Setting1)data).getV4(j));
+		}
+		for (int i = 1; i < cateIndexMax + 1; i++){
+			if (number[i] > 0)
+			gamma[i].multiply(1.0 / (1.0 * number[i]));
 		}
 	}
 	
@@ -798,15 +1042,15 @@ public class MCMC {
 		return sigmaDotProduct;
 	}
 	public void inferenceGamma() {
-		// TODO Auto-generated method stub
-		gamma = new Vector4[cateIndexMax + 1];
 		for (int i = 1; i < cateIndexMax + 1; i++){
 			gamma[i] = new Vector4();
 		}
 		for (int j = 0; j < stateNum; j++){
-			gamma[z[j]].add(((Setting1)data).getV4(j));
+//			gamma[z[j]].add(((Setting1)data).getV4(j));
+			gamma[z[j]].add(x[j]);
 		}
 		for (int i = 1; i < cateIndexMax + 1; i++){
+			if (number[i] > 0)
 			gamma[i].multiply(1.0 / (1.0 * number[i]));
 		}
 	}
